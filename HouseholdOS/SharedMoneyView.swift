@@ -31,7 +31,7 @@ struct BankSnapshot: Codable {
 }
 
 struct SharedMoneyView: View {
-    @Environment(HouseholdStore.self) private var store
+    @SwiftUI.Environment(HouseholdStore.self) private var store
     @State private var editor: RecordEditorRequest?
     @State private var showPaid = false
     private var unpaid: [SharedRecord] { store.visible(.bill).filter { !$0.payload.paid } }
@@ -70,7 +70,7 @@ struct SharedMoneyView: View {
 }
 
 struct BankConnectionsView: View {
-    @Environment(BackendClient.self) private var backend
+    @SwiftUI.Environment(BackendClient.self) private var backend
     @State private var snapshot: BankSnapshot?
     @State private var busy = false
     @State private var error: String?
@@ -184,8 +184,8 @@ struct ServiceQuote: Codable, Identifiable {
     enum CodingKeys: String,CodingKey { case id,providerName = "provider_name",amountCents = "amount_cents",currency,description,status,expiresAt = "expires_at" }
 }
 struct ServiceQuotesView: View {
-    @Environment(HouseholdStore.self) private var store
-    @Environment(\.openURL) private var openURL
+    @SwiftUI.Environment(HouseholdStore.self) private var store
+    @SwiftUI.Environment(\.openURL) private var openURL
     @State private var quotes: [ServiceQuote] = []
     @State private var error: String?
     @State private var busy = false

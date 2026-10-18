@@ -5,10 +5,10 @@ import UserNotifications
 @Observable @MainActor final class ReminderService {
     private(set) var permission: UNAuthorizationStatus = .notDetermined
     var error: String?
-    var enabled: Bool {
-        get { UserDefaults.standard.bool(forKey:"hh.remindersEnabled") }
-        set { UserDefaults.standard.set(newValue,forKey:"hh.remindersEnabled") }
-    }
+    var enabled = UserDefaults.standard.bool(forKey:"hh.remindersEnabled") { didSet { UserDefaults.standard.set(enabled,forKey:"hh.remindersEnabled") } }
+    var quietHours = UserDefaults.standard.object(forKey:"hh.quietHours") as? Bool ?? true { didSet { UserDefaults.standard.set(quietHours,forKey:"hh.quietHours") } }
+    var quietStart = UserDefaults.standard.object(forKey:"hh.quietStart") as? Int ?? 22 { didSet { UserDefaults.standard.set(quietStart,forKey:"hh.quietStart") } }
+    var quietEnd = UserDefaults.standard.object(forKey:"hh.quietEnd") as? Int ?? 8 { didSet { UserDefaults.standard.set(quietEnd,forKey:"hh.quietEnd") } }
 
     func requestPermission() async {
         do {
@@ -30,7 +30,12 @@ import UserNotifications
         for record in due.prefix(60) {
             guard let date = record.payload.dueAt else { continue }
             let remindAt = calendar.date(byAdding:.day,value:-1,to:date) ?? date
-            let fire = remindAt > Date() ? remindAt : date
+            var fire = remindAt > Date() ? remindAt : date
+            let hour = calendar.component(.hour,from:fire)
+            let inQuietHours = quietStart < quietEnd ? (hour>=quietStart && hour<quietEnd) : (hour>=quietStart || hour<quietEnd)
+            if quietHours && quietStart != quietEnd && inQuietHours {
+                fire = calendar.nextDate(after:fire,matching:DateComponents(hour:quietEnd,minute:0),matchingPolicy:.nextTime) ?? fire
+            }
             guard fire > Date() else { continue }
             let content = UNMutableNotificationContent()
             content.title = record.payload.title

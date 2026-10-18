@@ -73,6 +73,16 @@ struct SharedHouseholdView: View {
                     Button("Open notification settings") { if let url = URL(string:UIApplication.openSettingsURLString) { openURL(url) } }
                 }
                 Text("Reminders are scheduled on this device after it syncs. Open the app to receive the latest household changes.").font(.footnote).foregroundStyle(.secondary)
+                Toggle("Quiet hours",isOn:Binding(get:{reminders.quietHours},set:{reminders.quietHours = $0; Task { await reschedule() } }))
+                if reminders.quietHours {
+                    Picker("Quiet from",selection:Binding(get:{reminders.quietStart},set:{reminders.quietStart = $0; Task { await reschedule() } })) {
+                        ForEach(0..<24) { hour in Text(String(format:"%02d:00",hour)).tag(hour) }
+                    }
+                    Picker("Until",selection:Binding(get:{reminders.quietEnd},set:{reminders.quietEnd = $0; Task { await reschedule() } })) {
+                        ForEach(0..<24) { hour in Text(String(format:"%02d:00",hour)).tag(hour) }
+                    }
+                    Text("Uses household time. Reminders during quiet hours move to the next allowed morning; some may arrive after their due time.").font(.footnote).foregroundStyle(.secondary)
+                }
                 if let error = reminders.error { Text(error).foregroundStyle(.red) }
             } header: { Text("Reminders") }
             Section("Home records") {
@@ -112,7 +122,7 @@ struct SharedHouseholdView: View {
         .confirmationDialog(store.isLocal ? "Delete this on-device household?" : "Permanently delete your account?",isPresented:$deleting,titleVisibility:.visible) {
             Button("Delete",role:.destructive) { run {
                 if store.isLocal { try store.deleteLocalHousehold() }
-                else { let _: JSONValue = try await backend.function("account/delete",[String:String]()); await backend.signOut(); store.reset() }
+                else { let _: JSONValue = try await backend.function("account/delete",[String:String]()); try store.removeAccountCache(); await backend.signOut(); store.reset() }
                 await reminders.clear()
             }}
         } message: { Text(store.isLocal ? "Export first if you want a copy." : "Transfer household ownership before deleting your account. Shared household records remain for other members.") }
@@ -196,7 +206,10 @@ struct LegacyImportView: View {
             Section {
                 Text("Import copies of \(lists.count) lists, \(tasks.count) routines, and \(maintenance.count) maintenance records into this household. The original records are preserved.")
                 Text("This shares the imported data with everyone in the selected household.").font(.footnote).foregroundStyle(.secondary)
-                Button(imported || UserDefaults.standard.bool(forKey:importKey) ? "Already imported here" : "Import into this household") { performImport() }
+                if store.hasSavedLocalHousehold {
+                    Button("Import saved on-device household") { do { try store.importSavedLocalHousehold() } catch { self.error = error.localizedDescription } }
+                }
+                Button(imported || UserDefaults.standard.bool(forKey:importKey) ? "Already imported here" : "Import original SwiftData records") { performImport() }
                     .disabled(imported || UserDefaults.standard.bool(forKey:importKey))
             }
             if let error { Text(error).foregroundStyle(.red) }
@@ -207,23 +220,23 @@ struct LegacyImportView: View {
             for list in lists {
                 var fields = SharedFields(title:list.name)
                 fields.notes = "Imported from this device"
-                let record = try store.add(.list,fields:fields)
+                let record = try store.importRecord(sourceKey:"legacy:\(list.persistentModelID)",kind:.list,fields:fields)
                 for item in list.items {
                     var itemFields = SharedFields(title:item.name)
                     itemFields.parentID = record.id; itemFields.quantity = item.quantity; itemFields.completed = item.isChecked
-                    try store.add(.item,fields:itemFields)
+                    try store.importRecord(sourceKey:"legacy:\(item.persistentModelID)",kind:.item,fields:itemFields)
                 }
             }
             for task in tasks {
                 var fields = SharedFields(title:task.name)
                 fields.completed = task.isCompletedToday
                 fields.notes = "Imported routine. Set a due date and repeat schedule to continue it."
-                try store.add(.task,fields:fields)
+                try store.importRecord(sourceKey:"legacy:\(task.persistentModelID)",kind:.task,fields:fields)
             }
             for task in maintenance {
                 var fields = SharedFields(title:task.name)
                 fields.notes = task.notes; fields.dueAt = task.dueDate; fields.completed = task.isComplete; fields.completedAt = task.completedDate
-                try store.add(.task,fields:fields)
+                try store.importRecord(sourceKey:"legacy:\(task.persistentModelID)",kind:.task,fields:fields)
             }
             UserDefaults.standard.set(true,forKey:importKey); imported = true
         } catch { self.error = error.localizedDescription }

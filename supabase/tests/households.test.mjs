@@ -155,3 +155,29 @@ test('household subscriptions reject reassignment and old revocation events',asy
   await rpc('server_store_entitlement',{...grant,p_revoked:true,p_signed_at:new Date(signed+1000).toISOString()});
   assert.equal((await as(owner,()=>rpc('household_entitlement',{p_household_id:household.id}))).active,false);
 });
+test('task rotations advance once and reset recurring subtasks',async()=>{
+  const task=mutation('task',{title:'Laundry',completed:false,assigneeID:owner,rotation:[owner,member],subtasks:[{id:randomUUID(),title:'Wash',completed:true}],repeatRule:'weekly',dueAt:'2026-10-18T13:00:00Z'});
+  await as(owner,()=>rpc('mutate_record',task));
+  const next=await as(owner,()=>rpc('mutate_record',{...task,p_base_version:1,p_payload:{...task.p_payload,completed:true},p_mutation_id:randomUUID()}));
+  assert.equal(next.nextRecord.payload.assigneeID,member);
+  assert.equal(next.nextRecord.payload.subtasks[0].completed,false);
+});
+test('bill allocations require exact nonnegative adult-member shares',async()=>{
+  const bill={title:'Shared bill',amountCents:100,currency:'CAD',shares:{[owner]:51,[member]:49}};
+  await as(owner,()=>rpc('mutate_record',mutation('bill',bill)));
+  await assert.rejects(as(owner,()=>rpc('mutate_record',mutation('bill',{...bill,shares:{[owner]:101}}))),/add up/);
+  await assert.rejects(as(owner,()=>rpc('mutate_record',mutation('bill',{...bill,shares:{[owner]:-1,[member]:101}}))),/nonnegative/);
+});
+test('refund state is monotonic and cannot be undone by stale settlement events',async()=>{
+  const quote=(await db.query("select booking_id from private.checkout_requests where stripe_session_id='cs_test'")).rows[0].booking_id;
+  const refund={p_event_id:'evt_refund_1',p_quote_id:quote,p_amount_cents:12345,p_refunded_cents:100,p_currency:'cad'};
+  await rpc('server_stripe_refund',refund);
+  assert.equal((await db.query('select status from public.service_quotes where id=$1',[quote])).rows[0].status,'partially_refunded');
+  await rpc('server_stripe_refund',{...refund,p_event_id:'evt_refund_full',p_refunded_cents:12345});
+  await rpc('server_stripe_refund',{...refund,p_event_id:'evt_refund_stale',p_refunded_cents:50});
+  await rpc('server_stripe_event',{p_event_id:'evt_old_paid',p_type:'checkout.session.completed',p_session_id:'cs_test',p_amount_cents:12345,p_currency:'cad'});
+  assert.equal((await db.query('select status from public.service_quotes where id=$1',[quote])).rows[0].status,'refunded');
+});
+test('deleting an owner account is blocked at the database boundary',async()=>{
+  await assert.rejects(db.query('delete from auth.users where id=$1',[owner]),/Transfer household ownership/);
+});

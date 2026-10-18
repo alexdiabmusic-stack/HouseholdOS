@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import CryptoKit
 
 @Observable @MainActor final class HouseholdStore {
     let backend: BackendClient
@@ -321,7 +322,59 @@ import Observation
     }
     func deleteLocalHousehold() throws {
         if let household { try FileManager.default.removeItem(at: cacheURL(household.id)) }
+        UserDefaults.standard.removeObject(forKey:selectionKey)
         reset()
+    }
+
+    func removeAccountCache() throws {
+        let directory = cacheURL(UUID()).deletingLastPathComponent()
+        if FileManager.default.fileExists(atPath:directory.path) {
+            for url in try FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil) where url.lastPathComponent.hasPrefix(userID.uuidString+"-") { try FileManager.default.removeItem(at:url) }
+        }
+        UserDefaults.standard.removeObject(forKey:selectionKey)
+    }
+
+    @discardableResult func importRecord(sourceKey:String,kind:RecordKind,fields:SharedFields) throws -> SharedRecord {
+        guard let household else { throw BackendError.server("Choose a household first.") }
+        let hex = SHA256.hash(data:Data("\(household.id.uuidString):\(sourceKey)".utf8)).prefix(16).map { String(format:"%02x",$0) }.joined()
+        let indexes = [0,8,12,16,20,32]
+        let parts = zip(indexes,indexes.dropFirst()).map { a,b in String(hex[hex.index(hex.startIndex,offsetBy:a)..<hex.index(hex.startIndex,offsetBy:b)]) }
+        guard let id = UUID(uuidString:parts.joined(separator:"-")) else { throw BackendError.server("Import ID could not be created.") }
+        if let existing = records.first(where: { $0.id == id }) { return existing }
+        let record = SharedRecord(id:id,householdID:household.id,kind:kind,payload:fields,version:0,deleted:false,updatedBy:userID,updatedAt:Date())
+        try save(record)
+        return records.first { $0.id == id } ?? record
+    }
+
+    var hasSavedLocalHousehold:Bool {
+        guard !isLocal, let data = UserDefaults.standard.data(forKey:"hh.selection.\(localUserID)"), let h = try? SharedCoding.decoder().decode(SharedHousehold.self,from:data) else { return false }
+        let path = cacheURL(h.id).deletingLastPathComponent().appendingPathComponent("\(localUserID)-\(h.id).json")
+        return FileManager.default.fileExists(atPath:path.path)
+    }
+
+    func importSavedLocalHousehold() throws {
+        guard !isLocal, let data = UserDefaults.standard.data(forKey:"hh.selection.\(localUserID)") else { return }
+        let source = try SharedCoding.decoder().decode(SharedHousehold.self,from:data)
+        let url = cacheURL(source.id).deletingLastPathComponent().appendingPathComponent("\(localUserID)-\(source.id).json")
+        let cache = try SharedCoding.decoder().decode(Cache.self,from:Data(contentsOf:url))
+        var parents:[UUID:UUID] = [:]
+        for list in cache.records.filter({ !$0.deleted && $0.kind == .list }) {
+            var fields = list.payload; fields.shoppingByID = nil
+            parents[list.id] = try importRecord(sourceKey:"local:\(list.id)",kind:.list,fields:fields).id
+        }
+        for record in cache.records.filter({ !$0.deleted && $0.kind != .list }) {
+            var fields = record.payload
+            if record.kind == .item {
+                guard let parent = fields.parentID, let remapped = parents[parent] else { continue }
+                fields.parentID = remapped
+            }
+            fields.assigneeID = fields.assigneeID == nil ? nil : userID
+            fields.paidByID = fields.paidByID == nil ? nil : userID
+            if !fields.shares.isEmpty { fields.shares = [userID.uuidString:fields.amountCents] }
+            fields.rotation = []; fields.previousID = nil
+            if record.isFinished { fields.repeatRule = .none }
+            try importRecord(sourceKey:"local:\(record.id)",kind:record.kind,fields:fields)
+        }
     }
 
     private func replace(_ record: SharedRecord) {
