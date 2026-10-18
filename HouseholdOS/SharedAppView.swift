@@ -31,6 +31,21 @@ struct ContentView: View {
             notificationDelegate.onOpen = { payload in openNotification(payload) }
             UNUserNotificationCenter.current().delegate = notificationDelegate
             await backend.restore(); await household.restore(); booted = true
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("--ui-smoke-test") {
+                do {
+                    try household.createLocal(name:"Maple House",displayName:"Alex")
+                    let groceries = try household.add(.list,fields:SharedFields(title:"Weekly groceries"))
+                    var milk = SharedFields(title:"Oat milk"); milk.parentID = groceries.id; milk.quantity = "2 × 1 L"
+                    try household.add(.item,fields:milk)
+                    var chore = SharedFields(title:"Take out the recycling"); chore.assigneeID = household.userID; chore.dueAt = Date().addingTimeInterval(3600); chore.repeatRule = .weekly
+                    try household.add(.task,fields:chore)
+                    var bill = SharedFields(title:"Electricity"); bill.amountCents = 11499; bill.dueAt = Date().addingTimeInterval(86400)
+                    try household.add(.bill,fields:bill)
+                    if let index = ProcessInfo.processInfo.arguments.firstIndex(of:"--tab"), ProcessInfo.processInfo.arguments.indices.contains(index+1), let tab = AppTab(rawValue:ProcessInfo.processInfo.arguments[index+1]) { selectedTab = tab }
+                } catch { household.error = error.localizedDescription }
+            }
+            #endif
         }
         .task(id:household.household?.id) {
             guard household.household != nil else { return }

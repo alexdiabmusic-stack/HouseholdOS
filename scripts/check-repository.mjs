@@ -6,12 +6,16 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 
 const tracked=(await run('git',['ls-files','--cached','--others','--exclude-standard'],{encoding:'utf8'})).stdout.trim().split('\n').filter(Boolean);
-const forbidden=tracked.filter(file=>/^(\.env\.(?!example)|Config\/Local\.xcconfig|HouseholdOS\/ServiceConfiguration\.plist)/.test(file));
+const forbidden=tracked.filter(file=>/^(\.env\.(?!example)|Config\/Local\.(?:xcconfig|entitlements)|HouseholdOS\/ServiceConfiguration\.plist)/.test(file));
 assert.deepEqual(forbidden,[],'Private local configuration must stay out of source control');
 for(const file of tracked) {
   const text=await readFile(file,'utf8');
   assert.equal(/(?:sk_live_|sk_test_|sb_secret_)[a-zA-Z0-9]{12,}/.test(text),false,`Secret-like value in ${file}`);
   assert.equal(/PLAID_SECRET\s*=\s*[a-f0-9]{20,}/i.test(text),false,`Plaid secret in ${file}`);
+  for(const token of text.matchAll(/eyJ[A-Za-z0-9_-]+\.([A-Za-z0-9_-]+)\.[A-Za-z0-9_-]+/g)) {
+    let claims; try { claims=JSON.parse(Buffer.from(token[1],'base64url').toString()); } catch { continue; }
+    assert.notEqual(claims.role,'service_role',`Supabase service-role token in ${file}`);
+  }
   if(file.endsWith('.json')) JSON.parse(text);
 }
 const project=await readFile('HouseholdOS.xcodeproj/project.pbxproj','utf8');

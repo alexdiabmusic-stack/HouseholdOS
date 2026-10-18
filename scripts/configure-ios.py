@@ -4,6 +4,7 @@ import argparse
 import base64
 import json
 import plistlib
+import re
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -13,10 +14,11 @@ parser.add_argument('--publishable-key', required=True, help='Public anon/publis
 parser.add_argument('--bundle-id', required=True, help='Existing registered App Store bundle identifier')
 parser.add_argument('--app-link-domain', help='Owned domain configured for Plaid Universal Links')
 args = parser.parse_args()
-if urlparse(args.url).scheme != 'https' or not urlparse(args.url).hostname:
+endpoint = urlparse(args.url)
+if endpoint.scheme != 'https' or not endpoint.hostname or endpoint.path not in ('', '/') or endpoint.query or endpoint.fragment or endpoint.username or any(c in args.url for c in '\r\n$'):
     parser.error('Use an HTTPS Supabase URL')
 key = args.publishable_key
-if not key.startswith('sb_publishable_'):
+if not re.fullmatch(r'sb_publishable_[A-Za-z0-9_-]+', key):
     try:
         part = key.split('.')[1]
         payload = json.loads(base64.urlsafe_b64decode(part + '=' * (-len(part) % 4)))

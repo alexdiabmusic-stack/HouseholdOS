@@ -9,6 +9,8 @@ import UserNotifications
     var quietHours = UserDefaults.standard.object(forKey:"hh.quietHours") as? Bool ?? true { didSet { UserDefaults.standard.set(quietHours,forKey:"hh.quietHours") } }
     var quietStart = UserDefaults.standard.object(forKey:"hh.quietStart") as? Int ?? 22 { didSet { UserDefaults.standard.set(quietStart,forKey:"hh.quietStart") } }
     var quietEnd = UserDefaults.standard.object(forKey:"hh.quietEnd") as? Int ?? 8 { didSet { UserDefaults.standard.set(quietEnd,forKey:"hh.quietEnd") } }
+    private var latestRequest:(records:[SharedRecord],userID:UUID,timezone:String)?
+    private var reconciling = false
 
     func requestPermission() async {
         do {
@@ -18,6 +20,17 @@ import UserNotifications
     }
 
     func reconcile(records: [SharedRecord], userID: UUID, timezone: String) async {
+        latestRequest = (records,userID,timezone)
+        guard !reconciling else { return }
+        reconciling = true
+        defer { reconciling = false }
+        while let request = latestRequest {
+            latestRequest = nil
+            await schedule(records:request.records,userID:request.userID,timezone:request.timezone)
+        }
+    }
+
+    private func schedule(records:[SharedRecord],userID:UUID,timezone:String) async {
         let center = UNUserNotificationCenter.current()
         permission = await center.notificationSettings().authorizationStatus
         let existing = await center.pendingNotificationRequests().filter { $0.identifier.hasPrefix("hh.") }
@@ -50,9 +63,10 @@ import UserNotifications
     }
 
     func clear() async {
+        // Queue an empty snapshot behind an in-flight reconciliation so an older
+        // request cannot add a reminder after sign-out or disabling reminders.
+        await reconcile(records:[],userID:UUID(),timezone:TimeZone.current.identifier)
         let center = UNUserNotificationCenter.current()
-        let existing = await center.pendingNotificationRequests().filter { $0.identifier.hasPrefix("hh.") }
-        center.removePendingNotificationRequests(withIdentifiers:existing.map(\.identifier))
         center.removeAllDeliveredNotifications()
     }
 }
