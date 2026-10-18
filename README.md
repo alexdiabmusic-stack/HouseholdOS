@@ -23,6 +23,8 @@ Source implementation does not mean hosted services are connected. No Supabase p
 
 See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) for remaining work, limits and verification requirements. The app can be used in on-device mode without service configuration.
 
+The separate [grocery flyer pipeline](tools/flyers/README.md) prepares national/regional image downloading, local OCR, reviewable price/product proposals, SQLite/JSONL/CSV exports and grocery-item matching. Its live SmartCanucks run is blocked by the cloud network allowlist; the adapter has only synthetic-fixture validation so far. No real flyer dataset or automatic publication is available yet.
+
 ## Local checks
 
 ```sh

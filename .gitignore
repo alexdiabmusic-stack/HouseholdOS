@@ -12,4 +12,8 @@ supabase/.temp/
 supabase/.branches/
 *.xcuserstate
 xcuserdata/
+__pycache__/
+*.py[cod]
+.venv/
+data/flyers/
 

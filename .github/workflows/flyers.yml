@@ -1,0 +1,21 @@
+name: Validate flyer pipeline
+on:
+  push:
+    paths: ['tools/flyers/**', '.github/workflows/flyers.yml']
+  pull_request:
+    paths: ['tools/flyers/**', '.github/workflows/flyers.yml']
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: tools/flyers/requirements.txt
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra fonts-dejavu-core
+      - run: python -m pip install -r tools/flyers/requirements.txt
+      - run: python -m unittest discover -s tools/flyers/tests -v
