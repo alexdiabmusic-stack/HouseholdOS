@@ -222,7 +222,7 @@ struct MaintenanceView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    if activeTasks.isEmpty && !showCompleted {
+                    if activeTasks.isEmpty && completedTasks.isEmpty {
                         emptyState
                     } else {
                         ForEach(activeTasks) { task in

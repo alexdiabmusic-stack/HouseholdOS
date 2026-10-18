@@ -8,28 +8,9 @@ struct AccountDetailView: View {
 
     @State private var selectedCategory: String? = nil
 
-    private var accountTransactions: [FDTransaction] {
-        store.transactions(for: account.id.uuidString.replacingOccurrences(of: "00000000-0000-0000-0002-", with: "acct-").lowercased())
-            .sorted { $0.date > $1.date }
-    }
-
-    // Fallback: match by account type if ID lookup fails
-    private var displayTransactions: [FDTransaction] {
-        let byID = store.transactions.filter {
-            $0.accountID.contains(account.maskNumber ?? "____")
-        }.sorted { $0.date > $1.date }
-        return byID.isEmpty ? allAccountTransactions : byID
-    }
-
     private var allAccountTransactions: [FDTransaction] {
-        // Use the raw account ID string from the mock provider
-        let idMap: [UUID: String] = [
-            UUID(uuidString: "00000000-0000-0000-0002-000000000001")!: "acct-td-checking-001",
-            UUID(uuidString: "00000000-0000-0000-0002-000000000002")!: "acct-td-savings-001",
-            UUID(uuidString: "00000000-0000-0000-0002-000000000003")!: "acct-scotia-visa-001",
-        ]
-        guard let rawID = idMap[account.id] else { return [] }
-        return store.transactions.filter { $0.accountID == rawID }.sorted { $0.date > $1.date }
+        guard let providerID = account.providerAccountID else { return [] }
+        return store.transactions(for: providerID)
     }
 
     private var filteredTransactions: [FDTransaction] {

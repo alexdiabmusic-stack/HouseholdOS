@@ -173,7 +173,7 @@ enum InsightsEngine {
     // MARK: Cash Flow Forecast
     //
     // Projects `daysAhead` days starting from `startBalance`.
-    // Income assumed bi-monthly (1st and 15th of each month).
+    // Income timing is unknown unless supplied explicitly; never invent paydays.
     // Bills deducted on their predicted due dates.
     // The first point (offset 0 = today) is marked isProjected = false.
 
@@ -181,19 +181,22 @@ enum InsightsEngine {
         startBalance: Double,
         monthlyIncome: Double,
         bills: [DetectedBill],
-        daysAhead: Int = 30
+        daysAhead: Int = 30,
+        incomeEvents: [(date: Date, amount: Double)] = [],
+        dailySpending: Double = 0
     ) -> [ForecastPoint] {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
-        let incomePerPeriod = monthlyIncome / 2
+        // monthlyIncome is retained for source compatibility; no pay dates are inferred.
+        _ = monthlyIncome
         var balance = startBalance
         var points: [ForecastPoint] = []
 
-        for offset in 0...daysAhead {
+        for offset in 0...max(0, daysAhead) {
             guard let date = cal.date(byAdding: .day, value: offset, to: today) else { continue }
-            if offset > 0 {
-                let day = cal.component(.day, from: date)
-                if day == 1 || day == 15 { balance += incomePerPeriod }
+            do {
+                balance += incomeEvents.filter { cal.isDate($0.date, inSameDayAs: date) }.reduce(0) { $0 + $1.amount }
+                if offset > 0 { balance -= max(0, dailySpending) }
                 for bill in bills.filter({ !$0.isPaidThisMonth }) {
                     if let next = bill.predictedNextDate, cal.isDate(next, inSameDayAs: date) {
                         balance -= bill.amount
@@ -203,7 +206,7 @@ enum InsightsEngine {
             points.append(ForecastPoint(
                 id: "fc-\(offset)",
                 date: date,
-                projectedBalance: max(0, balance),
+                projectedBalance: balance,
                 isProjected: offset > 0
             ))
         }

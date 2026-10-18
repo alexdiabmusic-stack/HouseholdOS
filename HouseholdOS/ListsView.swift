@@ -117,7 +117,7 @@ struct ListCard: View {
                     .font(.system(size: 12))
                     .foregroundColor(.hhFaint)
                 if let date = lastOrderedAt {
-                    Text("Ordered \(date.formatted(.relative(presentation: .named)))")
+                    Text("Opened shopping \(date.formatted(.relative(presentation: .named)))")
                         .font(.system(size: 11))
                         .foregroundColor(Self.instacartGreen)
                 }
@@ -248,7 +248,7 @@ struct ListDetailView: View {
                             .cornerRadius(4)
                     }
                 }
-                Text("\(list.pendingCount) item\(list.pendingCount == 1 ? "" : "s") · delivery in ~1 hr")
+                Text("\(list.pendingCount) item\(list.pendingCount == 1 ? "" : "s") · continue in Instacart")
                     .font(.system(size: 12))
                     .foregroundColor(.hhSub)
             }

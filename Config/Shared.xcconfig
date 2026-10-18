@@ -1,0 +1,4 @@
+// Service keys here are public project identifiers; server secrets never belong here.
+SUPABASE_URL =
+SUPABASE_PUBLISHABLE_KEY =
+#include? "Local.xcconfig"
