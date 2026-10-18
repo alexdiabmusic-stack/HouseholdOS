@@ -78,6 +78,16 @@ def main(argv=None) -> int:
         )
     sub.add_parser("export")
     sub.add_parser("audit")
+    p = sub.add_parser("package", help="Build a portable test JSON package and ZIP")
+    p.add_argument("--output", type=Path, required=True)
+    p.add_argument(
+        "--as-of",
+        type=date.fromisoformat,
+        default=datetime.now(ZoneInfo("America/Toronto")).date(),
+    )
+    p.add_argument(
+        "--expected-offers", type=int, help="Require an exact snapshot count"
+    )
     p = sub.add_parser("benchmark")
     p.add_argument("labels", type=Path)
     p.add_argument(
@@ -186,6 +196,20 @@ def main(argv=None) -> int:
             print(json.dumps(report, indent=2))
             if report["status"] != "pass":
                 status = 2
+        elif args.command == "package":
+            from flyerkit.package import build_package
+
+            print(
+                json.dumps(
+                    build_package(
+                        args.root,
+                        args.output,
+                        as_of=args.as_of.isoformat(),
+                        expected_offers=args.expected_offers,
+                    ),
+                    indent=2,
+                )
+            )
         elif args.command == "benchmark":
             from flyerkit.benchmark import benchmark
 

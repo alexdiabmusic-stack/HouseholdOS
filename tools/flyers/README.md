@@ -39,6 +39,18 @@ Global `--root PATH` must precede the command. Repeated `--store` and `--provinc
 
 `--max-flyers`, `--max-pages-per-flyer` and OCR `--max-pages` are sample limits. Truncated runs report partial coverage and do not pass the full-dataset audit.
 
+## Portable JSON test package
+
+```sh
+python tools/flyers/flyers.py package --as-of 2026-10-18 --expected-offers 13283 --output data/flyers/packages/smartcanucks-test-2026-10-18
+```
+
+This creates an edition-organized directory and a ZIP beside it. `package.json` contains counts, paths and SHA256 checksums. `retailers.json` lists banners, and `editions/index.json` locates each edition's manifest, offers and review history. The dated exports include **one standard JSON array containing all 13,283 offers**, plus separate checked-deals, offer-review and source-review JSONL files. All IDs, original fields and review states are retained. Import one view at a time using `offer_id` as the idempotent key.
+
+The JSON-only package references original images by URL and hash. Local image paths refer to the original dataset. Images, raw OCR, the collector and SQLite are not required to load the JSON. Generated packages stay under the gitignored dataset directory.
+
+After extracting the ZIP, install its small `requirements.txt` and run `python verify.py .` inside the extracted directory. The standalone verifier checks file hashes, all offer schemas, unique IDs, exact partition totals, source-image/context links, coordinates and correct review-state filtering. Packaging never promotes unreviewed proposals, and existing output paths are preserved.
+
 ## Review and publish checked deals
 
 1. Open **Applicability** (`exports/sources.html`). Check dates, published region, participating cities and exclusions against the source. Unknown geography must be resolved before its offers can be validated. Do not turn “West” into an assumed list of participating provinces, or treat a retailer's geographic name as availability.
