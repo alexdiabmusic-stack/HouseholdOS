@@ -22,7 +22,7 @@ struct BillPaySheet: View {
     }
 
     private var postPaymentSafe: Double {
-        max(0, financialStore.safeToSpend - bill.amount)
+        financialStore.safeToSpend // This confirmed bill is already reserved.
     }
 
     var body: some View {

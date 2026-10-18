@@ -5,16 +5,16 @@ import Foundation
 // MARK: - Brand Colors
 
 extension Color {
-    static let hhBg     = Color(red: 0.961, green: 0.945, blue: 0.925) // #f5f1ec
-    static let hhCard   = Color(red: 1.0,   green: 1.0,   blue: 1.0)   // #ffffff
-    static let hhAccent = Color(red: 0.761, green: 0.427, blue: 0.310) // #c26d4f
-    static let hhInk    = Color(red: 0.169, green: 0.149, blue: 0.125) // #2b2620
-    static let hhSub    = Color(red: 0.561, green: 0.522, blue: 0.478) // #8f857a
-    static let hhFaint  = Color(red: 0.702, green: 0.655, blue: 0.604) // #b3a79a
-    static let hhShell  = Color(red: 0.914, green: 0.902, blue: 0.878) // #e9e6e0
-    static let hhGreen  = Color(red: 0.31,  green: 0.686, blue: 0.533) // #4faf88
-    static let hhBlue   = Color(red: 0.29,  green: 0.565, blue: 0.886) // #4a90e2
-    static let hhPurple = Color(red: 0.639, green: 0.427, blue: 0.773)
+    static let hhBg = Color("hhBg")
+    static let hhCard = Color("hhCard")
+    static let hhAccent = Color("hhAccent")
+    static let hhInk = Color("hhInk")
+    static let hhSub = Color("hhSub")
+    static let hhFaint = Color("hhFaint")
+    static let hhShell = Color("hhShell")
+    static let hhGreen = Color("hhGreen")
+    static let hhBlue = Color("hhBlue")
+    static let hhPurple = Color("hhPurple")
 }
 
 // MARK: - HouseholdTask
@@ -281,10 +281,11 @@ struct FinancialAccount: Identifiable {
     var availableBalance: Double?
     var lastUpdated: Date
     var maskNumber: String?
+    var providerAccountID: String?
 
     init(id: UUID = UUID(), institutionName: String, accountName: String,
          accountType: String, balance: Double, availableBalance: Double? = nil,
-         lastUpdated: Date = Date(), maskNumber: String? = nil) {
+         lastUpdated: Date = Date(), maskNumber: String? = nil, providerAccountID: String? = nil) {
         self.id = id
         self.institutionName = institutionName
         self.accountName = accountName
@@ -293,6 +294,7 @@ struct FinancialAccount: Identifiable {
         self.availableBalance = availableBalance
         self.lastUpdated = lastUpdated
         self.maskNumber = maskNumber
+        self.providerAccountID = providerAccountID
     }
 }
 

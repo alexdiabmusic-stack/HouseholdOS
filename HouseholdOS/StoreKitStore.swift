@@ -59,12 +59,13 @@ final class StoreKitStore {
 
     // MARK: - Purchase
 
-    func purchase(_ product: Product) async {
+    func purchase(_ product: Product, appAccountToken: UUID? = nil) async {
         purchaseError = nil
         isPurchasing = true
         defer { isPurchasing = false }
         do {
-            let result = try await product.purchase()
+            let options: Set<Product.PurchaseOption> = appAccountToken.map { [.appAccountToken($0)] } ?? []
+            let result = try await product.purchase(options: options)
             switch result {
             case .success(let verification):
                 // Client-side JWS check only — grants local display access.
@@ -108,7 +109,7 @@ final class StoreKitStore {
     private func refreshEntitlements() async {
         var active: Set<String> = []
         for await result in Transaction.currentEntitlements {
-            if case .verified(let txn) = result, txn.revocationDate == nil {
+            if case .verified(let txn) = result, txn.revocationDate == nil, (txn.expirationDate.map { $0 > Date() } ?? true) {
                 active.insert(txn.productID)
             }
         }
@@ -122,12 +123,8 @@ final class StoreKitStore {
         updatesTask = Task {
             for await result in Transaction.updates {
                 if case .verified(let txn) = result {
-                    if txn.revocationDate == nil {
-                        purchasedProductIDs.insert(txn.productID)
-                    } else {
-                        purchasedProductIDs.remove(txn.productID)
-                    }
                     await txn.finish()
+                    await refreshEntitlements()
                 }
             }
         }

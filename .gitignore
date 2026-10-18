@@ -1,0 +1,15 @@
+.DS_Store
+.build/
+DerivedData/
+node_modules/
+.env
+.env.*
+!.env.example
+Config/Local.xcconfig
+Config/Local.entitlements
+HouseholdOS/ServiceConfiguration.plist
+supabase/.temp/
+supabase/.branches/
+*.xcuserstate
+xcuserdata/
+

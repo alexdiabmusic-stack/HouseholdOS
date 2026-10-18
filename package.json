@@ -1,0 +1,12 @@
+{
+  "name": "householdos-backend-checks",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node supabase/tests/households.test.mjs && node supabase/tests/integrations.test.mjs",
+    "check": "node scripts/check-repository.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.14"
+  }
+}

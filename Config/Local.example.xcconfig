@@ -1,0 +1,5 @@
+// Public app configuration only. Copy to Local.xcconfig (gitignored).
+// Use $() to preserve // in Xcode configuration values.
+SUPABASE_URL = https:/$()/YOUR_PROJECT.supabase.co
+SUPABASE_PUBLISHABLE_KEY = YOUR_PUBLIC_ANON_OR_PUBLISHABLE_KEY
+PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.householdos

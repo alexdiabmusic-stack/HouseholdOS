@@ -80,7 +80,8 @@ final class PaymentStore {
         on date: Date,
         financialStore: FinancialStore
     ) async throws -> ScheduledPayment {
-        guard financialStore.safeToSpend - bill.amount > -500 else {
+        guard FeatureFlags.vopayPayments else { throw ProviderError.notEnabled }
+        guard bill.amount > 0, financialStore.checkingBalance - bill.amount >= financialStore.safetyBuffer else {
             throw PaymentStoreError.insufficientFunds
         }
         guard !hasScheduledPayment(forBillID: bill.id) else {
@@ -172,7 +173,7 @@ final class PaymentStore {
     }
 
     func hasScheduledPayment(forBillID id: String) -> Bool {
-        pendingPayments.contains { $0.billID == id && $0.status == .scheduled }
+        pendingPayments.contains { $0.billID == id && ($0.status == .scheduled || $0.status == .processing) }
     }
 
     var enabledAutoPayRulesCount: Int {

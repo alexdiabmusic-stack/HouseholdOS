@@ -182,7 +182,10 @@ final class FinancialStore {
     }
 
     var committedThisMonth: Double {
-        upcomingConfirmedBills.reduce(0) { $0 + $1.amount }
+        upcomingConfirmedBills.filter { bill in
+            guard let date = bill.predictedNextDate else { return true }
+            return Calendar.current.isDate(date, equalTo: Date(), toGranularity: .month)
+        }.reduce(0) { $0 + $1.amount }
     }
 
     var safeToSpend: Double {
@@ -216,7 +219,7 @@ final class FinancialStore {
     }
 
     var totalSubscriptionCostMonthly: Double {
-        visibleSubscriptions.reduce(0) { $0 + $1.amount }
+        visibleSubscriptions.reduce(0) { $0 + $1.annualCost / 12 }
     }
 
     // MARK: - Phase 8 Insights (computed on demand — no cached state needed)
@@ -233,7 +236,7 @@ final class FinancialStore {
         InsightsEngine.cashFlowForecast(
             startBalance: checkingBalance,
             monthlyIncome: monthlyIncome,
-            bills: detectedBills,
+            bills: confirmedBills,
             daysAhead: 30
         )
     }
@@ -267,7 +270,8 @@ final class FinancialStore {
 
         var bills: [DetectedBill] = []
         for r in recurringTransactions where r.amount >= minBillAmount && billCategories.contains(r.category.uppercased()) {
-            let paid = isThisMonth(r.lastDate) && r.lastDate >= Calendar.current.startOfDay(for: Date().startOfMonth)
+            // A prior charge does not settle the next bill occurrence.
+            let paid = false
             bills.append(DetectedBill(
                 id: r.id,
                 merchantName: r.merchantName,
