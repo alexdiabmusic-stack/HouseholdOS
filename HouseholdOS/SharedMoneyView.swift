@@ -125,7 +125,7 @@ struct BankConnectionsView: View {
             Button("Disconnect",role:.destructive) { run { let _: JSONValue = try await backend.function("bank/disconnect",[String:String]()); snapshot = nil; try await load() } }
         } message: { Text("This removes your saved bank data and revokes the connections. Household bill records remain.") }
         #if canImport(LinkKit)
-        .sheet(isPresented:$presentingLink) { PlaidLinkPresentation(handler:linkHandler) }
+        .sheet(isPresented:$presentingLink) { linkHandler?.makePlaidLinkSheet() }
         .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
             if let url = activity.webpageURL { linkHandler?.resumeAfterTermination(from:url) }
         }
@@ -158,20 +158,6 @@ struct BankConnectionsView: View {
         #endif
     }
 }
-
-#if canImport(LinkKit)
-private struct PlaidLinkPresentation: UIViewControllerRepresentable {
-    let handler: Handler?
-    func makeUIViewController(context:Context) -> UIViewController { UIViewController() }
-    func updateUIViewController(_ controller:UIViewController,context:Context) {
-        guard !context.coordinator.opened, let handler else { return }
-        context.coordinator.opened = true
-        DispatchQueue.main.async { handler.open(presentUsing:.viewController(controller)) }
-    }
-    func makeCoordinator() -> Coordinator { Coordinator() }
-    final class Coordinator { var opened = false }
-}
-#endif
 
 struct ServiceQuote: Codable, Identifiable {
     let id: UUID
