@@ -4,7 +4,7 @@ This document distinguishes source implementation from a deployed, validated pro
 
 | Recommended stage | Implemented in this change | Still required |
 | --- | --- | --- |
-| 1. Usable local core | New navigation, functional Today actions, grocery editing/inline entry/undo/list reuse, task assignment/subtasks/rotation, manual bills/shares, home records, local reminders, export and agenda. Adaptive palette and semantic text styles. | Xcode compilation, device screenshots, VoiceOver/large-text testing, signed TestFlight build and user acceptance. |
+| 1. Usable local core | New navigation, functional Today actions, grocery editing/inline entry/undo/list reuse, task assignment/subtasks/rotation, manual bills/shares, home records, local reminders, export and agenda. Adaptive palette and semantic text styles. Xcode simulator build and launch/capture of all five tabs passed. | Physical-device testing, VoiceOver/large-text testing, signed TestFlight build and user acceptance. |
 | 2. Shared household | Auth/email-code verification/recovery, memberships/invitations/roles, ownership transfer, scoped RLS, durable queues, versions, conflict choices, tombstones and Realtime invalidation. | Provision verified-free Supabase project, apply hosted settings/migrations, enable test recipients, and verify end-to-end with two accounts/devices. |
 | 3. Coordination | Attribution/activity feed, assigned recurring occurrences, subtasks/rotation, household shares, local reminders, agenda and calendar export. | Server push/APNs delivery, multi-device notification preferences, custom allocation and partial reimbursement workflow, two-way external calendar sync, comments and uploaded documents. |
 | 4. Banking | Native LinkKit dependency, server Link/exchange, real Transactions sandbox flow, encrypted bank tokens, private account/transaction snapshots, cursor-based atomic sync and disconnection. Legacy financial assumptions corrected/disabled. | Hosted secrets/network, actual sandbox calls, registered Universal Link domain, transaction pagination UI, recurring invoice matching, configurable forecast inputs and production-product approval. |
@@ -19,7 +19,9 @@ The supplied Plaid credentials were kept in an ignored local server configuratio
 
 ## Verification
 
-Backend policy/provider tests run locally using PGlite and mocked HTTP. Swift syntax can be parsed locally, but Swift, Xcode, Apple SDKs and an iOS simulator are unavailable in the Linux workspace. `swift test` and simulator build checks are configured in CI and must pass before merge/release. The Swift unit suite covers exact money validation, sparse payload defaults, date decoding, record round trips and calendar escaping/folding.
+All 28 backend policy/provider tests passed locally and in CI using PGlite and mocked HTTP. All five Swift core tests, the unsigned Xcode simulator build, and simulator launch/capture of the Today, Lists, Tasks, Money and Household tabs passed in macOS CI. The five captured screens were visually reviewed. Edge Function imports and repository secret/configuration checks passed. The Swift unit suite covers exact money validation, sparse payload defaults, date decoding, record round trips and calendar escaping/folding.
+
+These checks do not validate hosted authentication, two-device sync, real provider requests, physical-device accessibility or a signed release. Swift, Xcode and Apple SDKs are unavailable in the Linux workspace; native validation runs in CI.
 
 ## Known implementation limits
 

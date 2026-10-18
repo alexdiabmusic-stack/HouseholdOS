@@ -83,7 +83,7 @@ struct SharedListsView: View {
                     NavigationLink { SharedListDetailView(listID:list.id) } label: {
                         VStack(alignment:.leading,spacing:4) {
                             Label(list.payload.title,systemImage:"basket")
-                            Text("\(store.visible(.item,parent:list.id).filter { !$0.payload.completed }.count) items remaining").font(.caption).foregroundStyle(.secondary)
+                            Text("\(store.visible(.item,parent:list.id).filter { !$0.payload.completed }.count) left to get").font(.caption).foregroundStyle(.secondary)
                             if let shopper = list.payload.shoppingByID { Text("\(store.name(for:shopper)) is shopping").font(.caption).foregroundStyle(.secondary) }
                         }
                     }.swipeActions {
