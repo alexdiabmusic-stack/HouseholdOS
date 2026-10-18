@@ -1,0 +1,282 @@
+{
+  "as_of": "2026-10-18",
+  "readiness": {
+    "generated_at": "2026-10-18T20:11:10.558681+00:00",
+    "status": "pass",
+    "ready_for_review": true,
+    "flyers": 87,
+    "pages": 1351,
+    "processed_pages": 1351,
+    "offer_proposals": 13283,
+    "validated_deals": 5,
+    "needs_review": 13278,
+    "coverage": {
+      "co-op": {
+        "flyers": 8,
+        "pages": 84
+      },
+      "safeway": {
+        "flyers": 9,
+        "pages": 169
+      },
+      "save-on-foods": {
+        "flyers": 3,
+        "pages": 95
+      },
+      "t-and-t": {
+        "flyers": 6,
+        "pages": 46
+      },
+      "iga": {
+        "flyers": 4,
+        "pages": 53
+      },
+      "sobeys": {
+        "flyers": 4,
+        "pages": 54
+      },
+      "adonis": {
+        "flyers": 2,
+        "pages": 15
+      },
+      "foodland": {
+        "flyers": 3,
+        "pages": 41
+      },
+      "freshco": {
+        "flyers": 7,
+        "pages": 45
+      },
+      "giant-tiger": {
+        "flyers": 3,
+        "pages": 6
+      },
+      "independent": {
+        "flyers": 3,
+        "pages": 42
+      },
+      "loblaws": {
+        "flyers": 3,
+        "pages": 41
+      },
+      "metro": {
+        "flyers": 4,
+        "pages": 54
+      },
+      "no-frills": {
+        "flyers": 3,
+        "pages": 64
+      },
+      "real-canadian-superstore": {
+        "flyers": 2,
+        "pages": 94
+      },
+      "walmart": {
+        "flyers": 9,
+        "pages": 191
+      },
+      "atlantic-superstore": {
+        "flyers": 1,
+        "pages": 30
+      },
+      "buy-low-foods": {
+        "flyers": 1,
+        "pages": 11
+      },
+      "country-grocer": {
+        "flyers": 1,
+        "pages": 16
+      },
+      "farm-boy": {
+        "flyers": 1,
+        "pages": 10
+      },
+      "food-basics": {
+        "flyers": 1,
+        "pages": 15
+      },
+      "fortinos": {
+        "flyers": 1,
+        "pages": 29
+      },
+      "longos": {
+        "flyers": 1,
+        "pages": 20
+      },
+      "maxi": {
+        "flyers": 1,
+        "pages": 17
+      },
+      "nesters-market": {
+        "flyers": 1,
+        "pages": 15
+      },
+      "provigo": {
+        "flyers": 1,
+        "pages": 10
+      },
+      "quality-foods": {
+        "flyers": 1,
+        "pages": 17
+      },
+      "super-c": {
+        "flyers": 1,
+        "pages": 25
+      },
+      "thrifty-foods": {
+        "flyers": 1,
+        "pages": 21
+      },
+      "zehrs": {
+        "flyers": 1,
+        "pages": 21
+      }
+    },
+    "errors": [],
+    "warnings": [
+      {
+        "flyer_id": "cb47bb5433d2ee5e1ba30523",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "e0ed6c63c02937fcb1437c33",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "082b05474d262384c19679bd",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "61b50031ed0355b7548bd2cd",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "dae05032f5eb7bd4e3d44d0f",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "eb592b04bac599a9f9816129",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "42ef1f138d9002c8c22141b0",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "f2401ca730501d77b02672d5",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "54a8350a87dad06cfa31b6ac",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "cdfca9ad5bd58966d05143eb",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "8b87e30c98dbd0d4b58fa6fb",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "bee4b457dd8b8359ffb4baa9",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "54e7f4e8150525eef8a11efc",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "777b545c429960a9901d6b15",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "0b0d408be5ec813cf2889062",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "7b8f8f95253297b898881a43",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "cb853d2b65b0b375a4a1acfe",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "4b89be0ea4a5459ed45393c3",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "7e5c40c06a3b2e0e7a80c25e",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "f493af1061716e72f277a78b",
+        "warning": "source_region_needs_review"
+      },
+      {
+        "flyer_id": "52e93d10d981bb22e49ae81f",
+        "warning": "source_region_needs_review"
+      }
+    ],
+    "interpretation": "Ready for review checks source integrity and processing coverage. A reviewer must check product, price, package, conditions and applicability before any deal is exported for matching."
+  },
+  "raw_benchmark": {
+    "generated_at": "2026-10-18T20:10:54.451219+00:00",
+    "status": "complete",
+    "labels": 40,
+    "images": 3,
+    "all_fields_correct": 20,
+    "fields": {
+      "amount_cents": {
+        "correct": 35,
+        "total": 40,
+        "rate": 0.875
+      },
+      "basis": {
+        "correct": 32,
+        "total": 40,
+        "rate": 0.8
+      },
+      "purchase_quantity": {
+        "correct": 35,
+        "total": 40,
+        "rate": 0.875
+      },
+      "kind": {
+        "correct": 34,
+        "total": 40,
+        "rate": 0.85
+      },
+      "requires_membership": {
+        "correct": 31,
+        "total": 40,
+        "rate": 0.775
+      },
+      "product_tokens": {
+        "correct": 23,
+        "total": 40,
+        "rate": 0.575
+      }
+    },
+    "missing_images": [],
+    "reviewed_records_in_population": 0,
+    "interpretation": "Targeted labelled regions measure detection and field correctness on these images only. Unlabelled regions are not negatives; this is not whole-catalog precision or recall. Run against a saved pre-review export to measure raw OCR."
+  },
+  "raw_snapshot_sha256": "3564d790b016d9351f594b7cdeb36e92dbdac7c3e79d685184d37d391e24364c",
+  "checks": {
+    "python_tests": 54,
+    "schema_valid_records": 13283,
+    "browser_checks": "passed",
+    "visual_reviewed_examples": 5,
+    "positive_matching_cases": 5,
+    "negative_applicability_cases": 15,
+    "wrong_size_case": 1,
+    "live_browser": {
+      "offers": 13283,
+      "pages": 1351,
+      "editions": 87,
+      "reviewed_examples": 5
+    }
+  }
+}

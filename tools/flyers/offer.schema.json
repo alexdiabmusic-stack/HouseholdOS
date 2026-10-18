@@ -2,9 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "HouseholdOS flyer offer proposal",
   "type": "object",
-  "required": ["schema_version", "offer_id", "flyer_id", "retailer_id", "retailer_name", "geography", "valid_from", "valid_to", "product", "price", "review", "evidence"],
+  "required": ["schema_version", "offer_id", "flyer_id", "retailer_id", "retailer_name", "geography", "valid_from", "valid_to", "product", "price", "review", "evidence", "source_context_hash"],
   "properties": {
     "schema_version": {"const": 1},
+    "source_context_hash": {"type":"string","pattern":"^[0-9a-f]{24}$"},
     "offer_id": {"type": "string", "minLength": 1},
     "flyer_id": {"type": "string", "minLength": 1},
     "retailer_id": {"type": "string"},
@@ -16,7 +17,7 @@
       "properties": {
         "country": {"const": "CA"}, "provinces": {"type": "array", "items": {"type": "string"}},
         "cities": {"type": "array", "items": {"type": "string"}},
-        "scope": {"enum": ["city", "province", "national", "unknown"]}, "evidence": {"type": "string"}
+        "scope": {"enum": ["city", "province", "national", "regional", "unknown"]}, "evidence": {"type": "string"}
       }
     },
     "product": {"type": "object", "required": ["name", "canonical_tokens", "size", "details_raw"], "properties": {
