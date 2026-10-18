@@ -1,0 +1,63 @@
+{
+  "identifier" : "B5A7E8F2-3C4D-4E5F-9876-1A2B3C4D5E6F",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_customerEmail" : null
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "F1E2D3C4-B5A6-7890-ABCD-EF1234567890",
+      "localizations" : [],
+      "name" : "Household OS+",
+      "subscriptions" : [
+        {
+          "adHocOfferCodesEnabled" : false,
+          "debugDescription" : "Monthly subscription to Household OS+",
+          "displayPrice" : "4.99",
+          "familySharable" : false,
+          "groupNumber" : 1,
+          "internalID" : "A1B2C3D4-E5F6-7890-ABCD-EF1234567891",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Full access to all Household OS+ features including Safe AutoPay, advanced forecasting, and unlimited accounts.",
+              "displayName" : "Household OS+ Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.householdos.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Monthly",
+          "subscriptionGroupID" : "F1E2D3C4-B5A6-7890-ABCD-EF1234567890",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOfferCodesEnabled" : false,
+          "debugDescription" : "Annual subscription to Household OS+",
+          "displayPrice" : "39.99",
+          "familySharable" : false,
+          "groupNumber" : 2,
+          "internalID" : "B2C3D4E5-F6A7-8901-BCDE-F12345678902",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Full access to all Household OS+ features including Safe AutoPay, advanced forecasting, and unlimited accounts.",
+              "displayName" : "Household OS+ Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.householdos.premium.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Annual",
+          "subscriptionGroupID" : "F1E2D3C4-B5A6-7890-ABCD-EF1234567890",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 2,
+    "minor" : 0
+  }
+}
