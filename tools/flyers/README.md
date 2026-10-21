@@ -51,6 +51,19 @@ The JSON-only package references original images by URL and hash. Local image pa
 
 After extracting the ZIP, install its small `requirements.txt` and run `python verify.py .` inside the extracted directory. The standalone verifier checks file hashes, all offer schemas, unique IDs, exact partition totals, source-image/context links, coordinates and correct review-state filtering. Packaging never promotes unreviewed proposals, and existing output paths are preserved.
 
+Packages with visual assessments also include `reviews/visual-review-report.json`. It records coverage of the original offer IDs and the separate validated, rejected and unresolved outcomes. Each offer identifies whether its reviewer was an AI or a human. `retailers.json` preserves edition display names when a shared retailer ID includes different banners, such as Co-op IGA and Fredericton Co-op.
+
+### Apply a complete visual review
+
+```sh
+python tools/flyers/flyers.py assess /path/to/offer-assessments.jsonl --expected-offers 13283
+python tools/flyers/flyers.py package --as-of 2026-10-18 --expected-offers 13283 --output data/flyers/packages/smartcanucks-reviewed-2026-10-18
+```
+
+An assessment names the `offer_id`, exact `image_sha256`, fresh `source_context_hash`, `reviewer`, `method` (`ai_visual` or `human_visual`), `source_image_inspected: true`, `status` and `notes`. Its `checked_fields` object contains explicitly checked product name, brand (including explicit null), size text, integer price, basket quantity, basis, price kind, membership, conditions and offer dates. A pending assessment also names its `unresolved_fields`. The complete batch is checked before any offer changes; `--expected-offers` requires every original ID exactly once.
+
+Checked corrections can be saved while a record remains pending. Dates outside the source edition stay in `review.assessment.unapplied_fields` with `source_period_conflict`; they cannot enter deal matching. Pending corrections survive OCR refreshes against the same source. Audit history retains the previous values. Savings amounts can have a purchase-quantity threshold, but never receive a checkout unit price or enter the deals export. A full visual pass covers existing proposals; it does not measure missed-offer recall or train the OCR model.
+
 ## Review and publish checked deals
 
 1. Open **Applicability** (`exports/sources.html`). Check dates, published region, participating cities and exclusions against the source. Unknown geography must be resolved before its offers can be validated. Do not turn “West” into an assumed list of participating provinces, or treat a retailer's geographic name as availability.
@@ -63,7 +76,7 @@ After extracting the ZIP, install its small `requirements.txt` and run `python v
    `python tools/flyers/flyers.py review /path/to/flyer-review-decisions.jsonl`.
 6. Import only `exports/validated-deals.jsonl` into the app's public deals catalog.
 
-Browser decisions persist in local storage and remain drafts until downloaded and applied. JSONL application checks the exact original image, complete explicit price fields, date bounds, and `source_context_hash`. A stale decision cannot validate a record whose source dates or geography changed. Prices use integer CAD cents. Savings, regular prices, rejected entries and unreviewed proposals are excluded from the checked-deals export.
+Browser decisions persist in local storage and remain drafts until downloaded and applied. The browser labels confirmed image checks as `human_visual`. Scripted visual decisions must explicitly supply `method` and `source_image_inspected: true`; a later decision without visual provenance clears the previous assertion while preserving it in audit history. Coverage and current outcome counts refresh on export, including after source changes. JSONL application checks the exact original image, complete explicit price fields, date bounds, and `source_context_hash`. A stale decision cannot validate a record whose source dates or geography changed. Prices use integer CAD cents. Savings, regular prices, rejected entries and unreviewed proposals are excluded from the checked-deals export.
 
 Reviewed entries and manually added offers survive subsequent OCR runs when the source is unchanged. Failed OCR pages keep earlier records; errors and missing processing coverage prevent the readiness audit from passing. Extraction commits each completed page and caches raw OCR so an interrupted batch can resume.
 
@@ -86,6 +99,7 @@ Default directory: `data/flyers/` (gitignored).
 | `extraction-report.json` | Page coverage, proposals, failures and review invalidations |
 | `readiness-report.json` | Image integrity and full processing coverage |
 | `benchmark-report.json` | Field correctness on explicitly labelled sample regions |
+| `visual-review-report.json` | Cumulative image-assessment coverage and separate outcomes |
 | `exports/offers.jsonl`, `offers.csv` | All proposals, with review status |
 | `exports/validated-deals.jsonl` | Checked sale and multi-buy offers |
 | `exports/review-queue.jsonl` | Offers awaiting review |
@@ -115,6 +129,8 @@ Explicit province and city labels are retained. Named regional editions such as 
 ```
 
 Matching requires checked sale/multi-buy records, matching dates, applicable geography, explicit product tokens and compatible requested size. It retains brands and modifiers such as organic or lactose-free. An edition with city exclusions requires a city; an excluded city does not match. A published “West” label is not inferred from a province alone. Small explicit English/French aliases support common products.
+
+Source reviews can record `included_stores` and `excluded_stores` as published address lists. Those editions require `--store-address` as well as the applicable province/city. Included addresses must match the published selection, with common street abbreviations normalized; an excluded street remains excluded when its city suffix is omitted. These lists identify flyer participation, not live inventory.
 
 `--include-unreviewed` is a development inspection option and retains all review flags. It must not feed shopping decisions.
 

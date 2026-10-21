@@ -15,6 +15,7 @@ from pathlib import Path
 from .download import now, write_json
 from .pipeline import load_offers, manifest_paths
 from .package_verify import read_jsonl, verify_package
+from .source import STORES
 
 
 def _jsonl(path, rows):
@@ -69,10 +70,21 @@ def build_package(
         f
         for f in flyers
         if f["geography"]["scope"] == "unknown"
+        or f.get("source_review", {}).get("status") == "needs_review"
         or not f.get("valid_from")
         or not f.get("valid_to")
     ]
-    retailers = {f["retailer_id"]: f["retailer_name"] for f in flyers}
+    retailer_names = defaultdict(set)
+    for flyer in flyers:
+        retailer_names[flyer["retailer_id"]].add(flyer["retailer_name"])
+    retailers = {
+        key: next(iter(names))
+        if len(names) == 1
+        else "Co-op"
+        if key == "co-op"
+        else STORES.get(key, [key])[0]
+        for key, names in retailer_names.items()
+    }
     statuses = Counter(o["review"]["status"] for o in offers)
     counts = {
         "offers": len(offers),
@@ -101,7 +113,14 @@ def build_package(
         }
         write_json(
             staged / layout["retailers"],
-            [{"retailer_id": key, "name": retailers[key]} for key in sorted(retailers)],
+            [
+                {
+                    "retailer_id": key,
+                    "name": retailers[key],
+                    "edition_names": sorted(retailer_names[key]),
+                }
+                for key in sorted(retailers)
+            ],
         )
         index = []
         for flyer in flyers:
@@ -134,6 +153,13 @@ def build_package(
             staged / layout["summary"],
             {"test_only": True, "as_of": as_of, "counts": counts},
         )
+        review_report = root / "visual-review-report.json"
+        if review_report.exists():
+            layout["visual_review_report"] = "reviews/visual-review-report.json"
+            write_json(
+                staged / layout["visual_review_report"],
+                json.loads(review_report.read_text(encoding="utf-8")),
+            )
         schema = Path(__file__).resolve().parents[1] / "offer.schema.json"
         (staged / "schemas").mkdir()
         shutil.copyfile(schema, staged / "schemas" / "offer.schema.json")
@@ -149,7 +175,9 @@ def build_package(
 Snapshot date: {as_of}. Contains {len(offers):,} original offer records across {len(flyers)} editions.
 This package is for integration testing. Review states and reviewer identities are preserved.
 Only {len(validated)} records qualify for the checked-deals export; {len(pending):,} remain in review.
-AI visual reviews are explicitly labelled in each record. This is not a fully reviewed public catalog.
+AI visual reviews are explicitly labelled in each record. Pending records can contain checked
+corrections alongside explicit unresolved fields. This is a test snapshot with review decisions,
+not a certification of public-catalog accuracy or extraction completeness.
 
 ## Load all offers
 

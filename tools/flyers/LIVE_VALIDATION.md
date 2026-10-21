@@ -6,13 +6,13 @@ The initial 1,322 saved-image count omitted 29 pages: 28 AVIF images served unde
 
 ## Processing and integrity
 
-The final audit passed with **1,351 / 1,351 pages processed**, **13,283 proposals**, no processing/integrity errors and five separately reviewed example deals. The remaining **13,278 proposals** await review. All 13,283 raw records passed the offer JSON Schema. Machine-readable aggregate results are saved in [validation-2026-10-18.json](validation-2026-10-18.json).
+The integrity audit passed with **1,351 / 1,351 pages processed**, **13,283 original proposals** and no processing/integrity errors. All original offer IDs are preserved. The initial extraction measurements remain in [validation-2026-10-18.json](validation-2026-10-18.json); the completed visual review has its own [aggregate results](visual-review-2026-10-18.json).
 
 The final extraction uses English/French Tesseract and the bundled local PP-OCRv4 recognizer. Raw OCR is cached by image and engine configuration; price and caption rules are reapplied to each edition. Shared images keep separate source applicability and offer records. Per-image locks protect concurrent cache writes.
 
 `readiness-report.json` checks complete downloads, actual image hashes, processing coverage, price-box bounds, failures and the source applicability of validated records. Its pass means **ready for the local review workflow**. It does not certify unreviewed product-price associations or complete offer recall.
 
-There are **21 editions with unresolved regional applicability**. They remain in `exports/source-review-queue.jsonl`; their offers cannot be validated until evidence-backed geography is supplied. Named regions such as West are preserved without inventing participating provinces. Printed exclusions can be recorded through the source review tool.
+All **87 editions** received source-date and geography assessments. **63 are validated and 24 remain pending**, including 11 whose scope is unknown. The pending editions remain in `exports/source-review-queue.jsonl`; their offers cannot be validated until applicability is resolved. Named regions such as West are preserved without inventing participating provinces. Printed participating-store and excluded-store addresses are retained and require an explicit store selection when matching.
 
 ## Raw extraction measurement
 
@@ -32,13 +32,31 @@ These are calibration/regression examples, not a blind holdout. The product chec
 
 The most consequential remaining errors involve product captions, savings badges, membership conditions, missing price markers and weight bases. Reviewers can inspect every original page, correct all offer fields, reject a proposal, or draw a missed price box and enter an offer manually. Only explicitly validated sale/multi-buy records reach `validated-deals.jsonl`.
 
+## Complete visual review
+
+The AI visual review finished on October 21, 2026 (UTC), using the October 18 snapshot. Parallel reviewers inspected every indexed proposal group against its original page image. The review covers **13,283 / 13,283 offer IDs** across **998 unique image SHA256 hashes**. Shared images retain separate edition applicability. AI provenance is explicit in every offer; these decisions are not human approvals.
+
+| Current outcome | Records |
+| --- | ---: |
+| Validated, including regular prices and savings | 9,106 |
+| Needs clarification | 3,527 |
+| Rejected detections | 650 |
+| Sale/multi-buy records eligible for checked-deals export | 8,332 |
+
+The 3,527 pending records have been inspected. They retain known corrections and explicit unresolved fields, chiefly geographic/store participation, product/starting-price ambiguity and conflicting offer periods. **217 records** retain checked dates outside the edition in `review.assessment.unapplied_fields`; their primary dates are not silently extended. Pending and rejected records cannot enter deal matching. Export eligibility still requires a matching query date, location, package and conditions.
+
+Corrections include merged product captions, missing weight bases, isolated cents interpreted as whole dollars, quantity-triggered savings and member/non-member prices. Loyalty cash equivalents, package counts and historical flyer thumbnails were rejected as price detections. Four-day promotions retain their shorter dates. Source corrections include Walmart Fall's printed October 7 expiry, Country Grocer's separate Salt Spring Island period, participating Metro Kosher stores and store-address exclusions. Co-op edition display names are preserved under their stable shared retailer ID.
+
+This pass assesses existing proposals. It does not measure missed-offer recall, certify a production catalog or train the OCR recognizer. The raw benchmark above remains separate from the corrected dataset.
+
 ## Validation performed
 
-- **54 tests passed**, including English/French Tesseract, actual bundled neural OCR on AVIF, concurrent shared-image caching, live-HTML regressions, quote-safe TSV parsing, ambiguous package sizes, stale source decisions, manual entry and matching restrictions.
-- Chromium checks passed for rendering, editing, multiline conditions, validation/rejection, downloaded JSONL, saved drafts, manual price-box entry and source applicability review, with no browser script errors.
+- **73 tests passed**, including English/French Tesseract, bundled neural OCR on AVIF, concurrent image caching, stale image/source decisions, whole-batch assessment preflight, exact original-ID coverage, pending correction retention, savings thresholds, store restrictions and portable package verification.
+- The final standalone JSON package passed file-hash, JSON Schema, unique-ID, edition-partition, image-reference, source-context, coordinate, filtering and count checks. All 13,283 original IDs are preserved.
+- DOM execution checks passed for source-restriction preservation, savings-quantity editing and visual provenance in the review forms. Earlier Chromium checks cover drafts, downloaded decisions, manual price-box entry and source applicability review.
 - Python compilation, Ruff undefined/unused-name checks and Git whitespace checks passed.
 
-Five simple No Frills offers were also visually checked against the original page by Codex: raspberries, yellow onions, large eggs, evaporated milk and flour. Their reviewer is explicitly `Codex visual review`; this is an AI visual check, not a human approval. The source records Ontario-only availability and the printed exclusions for Dryden, Geraldton, Kenora and Thunder Bay. Matching checks include valid Ottawa queries and rejection of excluded cities, wrong provinces, expired dates and an incompatible package size. These corrected examples are separate from the raw benchmark.
+The reviewed package is `smartcanucks-reviewed-2026-10-18.zip`. It preserves all offers, review histories, the 3,527-record review queue, the 24-edition source queue and the cumulative visual-review report. The original `smartcanucks-test-2026-10-18.zip` and pre-review export remain unchanged. Images and OCR caches remain in the local source dataset; the portable package references their URLs and SHA256 hashes.
 
 ## Reproduce and inspect
 
@@ -46,11 +64,11 @@ Five simple No Frills offers were also visually checked against the original pag
 python tools/flyers/flyers.py download --as-of 2026-10-18
 python tools/flyers/flyers.py extract --engine hybrid --workers 2
 python tools/flyers/flyers.py audit
-cp data/flyers/exports/offers.jsonl data/flyers/exports/raw-before-review.jsonl
+cp -n data/flyers/exports/offers.jsonl data/flyers/exports/raw-before-review.jsonl
 python tools/flyers/flyers.py benchmark tools/flyers/tests/fixtures/live-price-labels-2026-10-18.jsonl --offers data/flyers/exports/raw-before-review.jsonl
 python tools/flyers/flyers.py serve
 ```
 
-Keep the pre-review snapshot before applying decisions. On later dates, replay the labelled editions through their source URLs in the label file; a changed image hash is a different sample. The generated extraction, readiness and benchmark reports contain the full local results. Images and generated catalogs are intentionally excluded from Git.
+Keep the pre-review snapshot before applying decisions. To replay a saved review batch, use `review-source` followed by `assess --expected-offers 13283`; generate a fresh `source_context_hash` after source corrections. The `package` command writes to a new output path and includes a standalone verifier. On later dates, replay the labelled editions through their source URLs in the label file; a changed image hash is a different sample. The generated extraction, readiness and benchmark reports contain the full local results. Images and generated catalogs are intentionally excluded from Git.
 
 See [README.md](README.md) for installation and review commands and [MODEL_CARD.md](MODEL_CARD.md) for component provenance and known limits. App import, hosted publication and scheduled collection remain separate from this local ingestion/review workflow.

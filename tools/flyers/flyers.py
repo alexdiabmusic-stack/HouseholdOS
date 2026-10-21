@@ -105,10 +105,24 @@ def main(argv=None) -> int:
         type=Path,
         help="JSONL source metadata decisions bound to a flyer image SHA256",
     )
+    p = sub.add_parser(
+        "assess",
+        help="Apply image-bound visual results, including unresolved corrections",
+    )
+    p.add_argument("decisions", type=Path)
+    p.add_argument(
+        "--expected-offers",
+        type=int,
+        help="Require coverage of every original offer ID",
+    )
     p = sub.add_parser("match")
     p.add_argument("query")
     p.add_argument("--province", choices=sorted(PROVINCES), required=True)
     p.add_argument("--city")
+    p.add_argument(
+        "--store-address",
+        help="Exact published store address for a store-restricted edition",
+    )
     p.add_argument(
         "--region",
         help="Explicit published regional edition, such as West; never inferred from a province",
@@ -247,6 +261,17 @@ def main(argv=None) -> int:
             from flyerkit.reviews import apply_source_reviews
 
             print(json.dumps(apply_source_reviews(args.root, args.decisions), indent=2))
+        elif args.command == "assess":
+            from flyerkit.assessments import apply_assessments
+
+            print(
+                json.dumps(
+                    apply_assessments(
+                        args.root, args.decisions, expected_offers=args.expected_offers
+                    ),
+                    indent=2,
+                )
+            )
         elif args.command == "match":
             matches = [
                 m
@@ -259,6 +284,7 @@ def main(argv=None) -> int:
                         province=args.province,
                         city=args.city,
                         region=args.region,
+                        store_address=args.store_address,
                         include_unreviewed=args.include_unreviewed,
                     )
                 )

@@ -42,6 +42,10 @@ Evaluate a pre-review export when assessing raw extraction. A corrected review r
 
 Each validated record requires an explicitly checked product, size or acknowledged unknown size, price, quantity, basis, price type, membership, conditions and validity dates. Savings and regular-price evidence never enters the sale-deals export. The all-pages index includes pages where no offers were detected.
 
+Visual assessments record their method (`ai_visual` or `human_visual`) and preserve checked fields even when applicability or another field remains unresolved. Brand is explicitly checked or null. A complete review report counts every original offer ID, including rejected non-price detections and pending records; completion does not imply that every record is an approved deal. Raw OCR benchmarks remain based on the saved pre-review snapshot.
+
+The review found mixed package alternatives, quantity-triggered discounts, store-address restrictions and per-page periods that differ from the listing. Mixed alternatives keep ambiguous sizes; exact multipacks retain their measurable quantity. Store-restricted matching requires an explicit published address. A date outside the edition remains pending with its checked date retained until the source-period conflict is resolved.
+
 ## Operational readiness
 
 `audit` checks source-image integrity, page coverage, bounded evidence coordinates and processing failures. A pass means the dataset is ready for the selected **review workflow**. It does not certify the semantic accuracy of unreviewed proposals. Only checked sale/multi-buy records are eligible for the app catalog.

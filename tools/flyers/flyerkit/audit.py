@@ -99,6 +99,8 @@ def audit(root: Path) -> dict:
                 <= offer["valid_to"]
                 <= flyer["valid_to"]
                 or flyer["geography"]["scope"] == "unknown"
+                or flyer.get("source_review", {}).get("status") == "needs_review"
+                or flyer.get("source_review", {}).get("unresolved_fields")
             ):
                 errors.append(
                     {

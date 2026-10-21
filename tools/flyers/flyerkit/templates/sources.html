@@ -133,8 +133,9 @@
           >Excluded cities (comma-separated)</label
         ><input id="excluded" placeholder="Thunder Bay" /><label for="evidence"
           >Quoted evidence for dates, region and exclusions</label
-        ><textarea id="evidence" rows="5" required></textarea
-        ><label
+        ><textarea id="evidence" rows="5" required></textarea>
+        <p id="stores"></p>
+        <label
           ><input id="checked" type="checkbox" required /> I checked the dates,
           participation and exclusions on this page.</label
         >
@@ -217,6 +218,14 @@
       $("excluded").value = (g.excluded_cities || []).join(", ");
       $("region").value = g.published_region || "";
       $("evidence").value = d?.notes ?? f.source_review?.notes ?? "";
+      $("stores").textContent = [
+        g.included_stores?.length
+          ? "Participating stores: " + g.included_stores.join("; ")
+          : "",
+        g.excluded_stores?.length
+          ? "Excluded stores: " + g.excluded_stores.join("; ")
+          : "",
+      ].filter(Boolean).join(". ");
       $("checked").checked = !!d;
       image();
       $("message").textContent = decisions.size + " source decisions";
@@ -253,6 +262,7 @@
         valid_to: $("end").value,
         notes: $("evidence").value.trim(),
         geography: {
+          ...(decisions.get(f.flyer_id)?.geography ?? f.geography),
           country: "CA",
           provinces,
           cities,

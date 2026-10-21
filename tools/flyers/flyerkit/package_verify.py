@@ -108,6 +108,7 @@ def verify_package(root: Path) -> dict:
         _require(len(rows) == entry["offer_count"], "Edition offer count mismatch")
         if (
             flyer["geography"]["scope"] == "unknown"
+            or flyer.get("source_review", {}).get("status") == "needs_review"
             or not flyer.get("valid_from")
             or not flyer.get("valid_to")
         ):
@@ -160,7 +161,9 @@ def verify_package(root: Path) -> dict:
             if offer["review"]["status"] == "validated":
                 _require(
                     bool(offer["review"].get("reviewer"))
-                    and flyer["geography"]["scope"] != "unknown",
+                    and flyer["geography"]["scope"] != "unknown"
+                    and flyer.get("source_review", {}).get("status") != "needs_review"
+                    and not flyer.get("source_review", {}).get("unresolved_fields"),
                     "Validated offer lacks checked applicability/reviewer",
                 )
                 _require(
@@ -208,6 +211,33 @@ def verify_package(root: Path) -> dict:
         == counts,
         "Summary totals mismatch",
     )
+    if "visual_review_report" in layout:
+        report = json.loads(
+            member(layout["visual_review_report"]).read_text(encoding="utf-8")
+        )
+        assessed = [
+            o
+            for o in offers
+            if o["review"].get("assessment", {}).get("source_image_inspected")
+        ]
+        _require(
+            report["assessed_offers"] == len(assessed),
+            "Visual review coverage mismatch",
+        )
+        _require(
+            report["outcomes"]
+            == dict(Counter(o["review"]["status"] for o in assessed)),
+            "Visual review outcome mismatch",
+        )
+        if report["complete_offer_coverage"]:
+            _require(len(assessed) == len(offers), "Incomplete claimed visual review")
+        _require(
+            all(
+                o["review"].get("method") in ("ai_visual", "human_visual")
+                for o in assessed
+            ),
+            "Visual review provenance missing",
+        )
     return {
         "status": "pass",
         "package_id": manifest["package_id"],

@@ -40,13 +40,18 @@ def apply_source_override(root: Path, flyer: dict) -> dict:
     checked_image(root, page)
     flyer["geography"] = item["geography"]
     flyer["valid_from"], flyer["valid_to"] = item["valid_from"], item["valid_to"]
+    if item.get("retailer_name"):
+        flyer["retailer_name"] = item["retailer_name"]
     flyer["source_review"] = {
         k: item[k] for k in ("reviewer", "reviewed_at", "image_sha256", "notes")
     }
+    flyer["source_review"]["status"] = item.get("status", "validated")
+    flyer["source_review"]["unresolved_fields"] = item.get("unresolved_fields", [])
     flyer["warnings"] = [
         w
         for w in flyer["warnings"]
-        if w not in ("region_unresolved", "validity_dates_unresolved")
+        if w != "validity_dates_unresolved"
+        and not (w == "region_unresolved" and item["geography"]["scope"] != "unknown")
     ]
     return flyer
 
@@ -77,6 +82,12 @@ def apply_source_reviews(root: Path, decisions: Path) -> dict:
             raise ValueError(
                 "Source reviews require reviewer and notes quoting the regional/date evidence"
             )
+        if item.get("status", "validated") not in ("validated", "needs_review"):
+            raise ValueError("Source review status must be validated or needs_review")
+        if item.get("status", "validated") == "validated" and item.get(
+            "unresolved_fields"
+        ):
+            raise ValueError("A validated source cannot have unresolved fields")
         page = next(
             (p for p in flyer["pages"] if p["sha256"] == item.get("image_sha256")), None
         )
@@ -103,7 +114,8 @@ def apply_source_reviews(root: Path, decisions: Path) -> dict:
             )
         scope = geo.get("scope")
         if (
-            scope not in ("city", "province", "national", "regional")
+            scope not in ("city", "province", "national", "regional", "unknown")
+            or (scope == "unknown" and item.get("status") != "needs_review")
             or (scope == "city" and (not cities or not provinces))
             or (scope == "province" and not provinces)
             or (scope == "regional" and not geo.get("published_region"))
@@ -116,6 +128,17 @@ def apply_source_reviews(root: Path, decisions: Path) -> dict:
             not isinstance(c, str) for c in geo.get("excluded_cities", [])
         ):
             raise ValueError("excluded_cities must be a list of names")
+        for field in ("included_stores", "excluded_stores"):
+            if not isinstance(geo.get(field, []), list) or any(
+                not isinstance(s, str) or not s.strip() for s in geo.get(field, [])
+            ):
+                raise ValueError(field + " must be a list of published store addresses")
+        if "retailer_name" in item and (
+            not isinstance(item["retailer_name"], str)
+            or not item["retailer_name"].strip()
+            or len(item["retailer_name"]) > 200
+        ):
+            raise ValueError("retailer_name must be an explicitly checked display name")
         item = {**item, "reviewed_at": now()}
         pending.append((key, path, flyer, item))
     for key, path, flyer, item in pending:
@@ -136,6 +159,8 @@ def apply_source_reviews(root: Path, decisions: Path) -> dict:
                 offer["geography"] == flyer["geography"]
                 and offer["flyer_valid_from"] == flyer["valid_from"]
                 and offer["flyer_valid_to"] == flyer["valid_to"]
+                and offer["retailer_name"] == flyer["retailer_name"]
+                and flyer.get("source_review", {}).get("status") != "needs_review"
             )
             if not same:
                 offer.update(
@@ -144,6 +169,7 @@ def apply_source_reviews(root: Path, decisions: Path) -> dict:
                     valid_to=flyer["valid_to"],
                     flyer_valid_from=flyer["valid_from"],
                     flyer_valid_to=flyer["valid_to"],
+                    retailer_name=flyer["retailer_name"],
                 )
                 offer["review"].update(status="needs_review", reviewer=None)
                 offer["review"]["reasons"].append("source_metadata_changed")

@@ -484,6 +484,10 @@
         reviewer,
         notes: $("notes").value.trim(),
       };
+      if ($("checked").checked) {
+        item.method = "human_visual";
+        item.source_image_inspected = true;
+      }
       if (status === "validated") {
         if (o.geography.scope === "unknown" || !o.valid_from || !o.valid_to)
           throw Error(
@@ -504,8 +508,14 @@
         const quantity = Number($("quantity").value);
         if (!Number.isInteger(quantity) || quantity < 1)
           throw Error("Units must be a positive integer.");
-        if (quantity > 1 !== ($("kind").value === "multibuy"))
-          throw Error("Use Multi-buy total for more than one unit.");
+        const kind = $("kind").value;
+        if (
+          (kind === "multibuy" && quantity < 2) ||
+          (["sale", "regular"].includes(kind) && quantity !== 1)
+        )
+          throw Error(
+            "A multi-buy needs two or more units; a sale/regular amount uses one unit.",
+          );
         if ($("start").value > $("end").value)
           throw Error("Offer end precedes start.");
         Object.assign(item, {

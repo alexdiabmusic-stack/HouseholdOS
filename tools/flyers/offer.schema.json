@@ -17,7 +17,9 @@
       "properties": {
         "country": {"const": "CA"}, "provinces": {"type": "array", "items": {"type": "string"}},
         "cities": {"type": "array", "items": {"type": "string"}},
-        "scope": {"enum": ["city", "province", "national", "regional", "unknown"]}, "evidence": {"type": "string"}
+        "scope": {"enum": ["city", "province", "national", "regional", "unknown"]}, "evidence": {"type": "string"},
+        "included_stores": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "excluded_stores": {"type": "array", "items": {"type": "string", "minLength": 1}}
       }
     },
     "product": {"type": "object", "required": ["name", "canonical_tokens", "size", "details_raw"], "properties": {
@@ -31,7 +33,19 @@
     }},
     "conditions": {"type": "array", "items": {"type": "string"}},
     "review": {"type": "object", "required": ["status", "reasons"], "properties": {
-      "status": {"enum": ["needs_review", "validated", "rejected"]}, "reasons": {"type": "array", "items": {"type": "string"}}
+      "status": {"enum": ["needs_review", "validated", "rejected"]}, "reasons": {"type": "array", "items": {"type": "string"}},
+      "method": {"enum": ["ai_visual", "human_visual"]},
+      "assessment": {
+        "type": "object", "required": ["source_image_inspected", "checked_fields", "unresolved_fields", "unapplied_fields"],
+        "properties": {
+          "source_image_inspected": {"const": true},
+          "checked_fields": {"type": "object"},
+          "unresolved_fields": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "unapplied_fields": {"type": "object"},
+          "image_review": {"type": ["object", "null"]},
+          "unrepresentable_source_basis": {"type": ["string", "null"]}
+        }
+      }
     }},
     "evidence": {"type": "object", "required": ["source_url", "source_image_url", "image_path", "image_sha256", "page_number", "price_bbox_px", "price_bbox_normalized", "ocr_engine", "ocr_price_confidence", "retrieved_at"], "properties": {
       "image_sha256": {"type": "string"}, "page_number": {"type": "integer", "minimum": 1},

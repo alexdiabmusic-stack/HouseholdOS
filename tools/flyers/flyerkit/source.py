@@ -33,7 +33,7 @@ STORES = {
     "save-on-foods": ["Save On Foods", "Save-On-Foods"],
     "safeway": ["Safeway"],
     "thrifty-foods": ["Thrifty Foods"],
-    "co-op": ["Calgary Co-op", "Co-op", "Coop"],
+    "co-op": ["Co-op", "Calgary Co-op", "Coop"],
     "longos": ["Longo's", "Longos"],
     "farm-boy": ["Farm Boy"],
     "t-and-t": ["T&T Supermarket", "T&T", "T and T Supermarket"],

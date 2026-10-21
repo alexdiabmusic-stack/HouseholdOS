@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import copy
 import hashlib
 import json
 import logging
@@ -262,7 +263,10 @@ def merge_page(root, flyer, page, proposals):
         new_ids = {p["offer_id"] for p in proposals}
         for old in existing.values():
             retained = old["evidence"].get("entry_method") == "manual" or (
-                old["review"]["status"] in ("validated", "rejected")
+                (
+                    old["review"]["status"] in ("validated", "rejected")
+                    or old["review"].get("assessment", {}).get("source_image_inspected")
+                )
                 and old["offer_id"] not in new_ids
             )
             if not retained or old["evidence"]["image_sha256"] != page["sha256"]:
@@ -318,7 +322,11 @@ def merge_page(root, flyer, page, proposals):
                 invalidated.append(old["offer_id"])
             offer = (
                 old
-                if same and old["review"]["status"] in ("validated", "rejected")
+                if same
+                and (
+                    old["review"]["status"] in ("validated", "rejected")
+                    or old["review"].get("assessment", {}).get("source_image_inspected")
+                )
                 else proposal
             )
             save_offer(db, offer)
@@ -496,6 +504,9 @@ def save_offer(db: sqlite3.Connection, offer: dict) -> None:
 
 def export(root: Path) -> dict:
     offers = load_offers(root)
+    from .review_reports import refresh_assessment_report
+
+    refresh_assessment_report(root, offers)
     folder = root / "exports"
     folder.mkdir(parents=True, exist_ok=True)
 
@@ -604,6 +615,7 @@ def export(root: Path) -> dict:
             f
             for f in flyers
             if f["geography"]["scope"] == "unknown"
+            or f.get("source_review", {}).get("status") == "needs_review"
             or not f.get("valid_from")
             or not f.get("valid_to")
         ],
@@ -734,6 +746,15 @@ def apply_reviews(root: Path, decisions: Path) -> dict:
         offer = known.get(item["offer_id"])
         if not offer:
             raise ValueError("Unknown offer_id: " + item["offer_id"])
+        before_review = copy.deepcopy(offer["review"])
+        method = item.get("method")
+        if method is not None and (
+            method not in ("ai_visual", "human_visual")
+            or item.get("source_image_inspected") is not True
+        ):
+            raise ValueError(
+                "A visual review method requires explicit image inspection"
+            )
         if (
             not isinstance(item.get("reviewer"), str)
             or not item["reviewer"].strip()
@@ -799,6 +820,8 @@ def apply_reviews(root: Path, decisions: Path) -> dict:
                 not offer["valid_from"]
                 or not offer["valid_to"]
                 or offer["geography"]["scope"] == "unknown"
+                or current.get("source_review", {}).get("status") == "needs_review"
+                or current.get("source_review", {}).get("unresolved_fields")
             ):
                 raise ValueError(
                     "Resolve source validity dates and region in the manifest, then re-extract before validation"
@@ -839,7 +862,9 @@ def apply_reviews(root: Path, decisions: Path) -> dict:
                     )
                 offer["valid_from"], offer["valid_to"] = a.isoformat(), b.isoformat()
             offer["product"]["name"] = item["product_name"]
-            offer["product"]["canonical_tokens"] = product_tokens(item["product_name"])
+            offer["product"]["canonical_tokens"] = product_tokens(
+                (item.get("brand") or "") + " " + item["product_name"]
+            )
             offer["product"]["brand"] = item.get("brand")
             if "size_text" in item:
                 offer["product"]["size"] = parse_size(item["size_text"])
@@ -856,9 +881,11 @@ def apply_reviews(root: Path, decisions: Path) -> dict:
                 or type(p["requires_membership"]) is not bool
             ):
                 raise ValueError("Invalid reviewed price parameters")
-            if (p["purchase_quantity"] > 1) != (p["kind"] == "multibuy"):
+            if (p["kind"] == "multibuy" and p["purchase_quantity"] < 2) or (
+                p["kind"] in ("sale", "regular") and p["purchase_quantity"] != 1
+            ):
                 raise ValueError(
-                    "A multi-buy needs two or more units; a sale/regular/savings amount uses one unit"
+                    "A multi-buy needs two or more units; a sale/regular amount uses one unit"
                 )
             if "conditions" in item:
                 if not isinstance(item["conditions"], list) or not all(
@@ -881,15 +908,34 @@ def apply_reviews(root: Path, decisions: Path) -> dict:
             reviewed_at=now(),
             notes=item.get("notes"),
         )
-        pending.append((offer, item))
+        # A later decision must not inherit someone else's visual assertion.
+        offer["review"].pop("method", None)
+        offer["review"].pop("assessment", None)
+        if method is not None:
+            from .assessments import FIELDS
+
+            offer["review"].update(
+                method=method,
+                assessment={
+                    "source_image_inspected": True,
+                    "checked_fields": {k: item[k] for k in FIELDS if k in item},
+                    "unresolved_fields": [],
+                    "unapplied_fields": {},
+                },
+            )
+        pending.append((offer, item, before_review))
     with database(root) as db:
-        for offer, _ in pending:
+        for offer, _, _ in pending:
             save_offer(db, offer)
     with (root / "review-audit.jsonl").open("a", encoding="utf-8") as f:
-        for offer, item in pending:
+        for offer, item, before_review in pending:
             f.write(
                 json.dumps(
-                    {"at": offer["review"]["reviewed_at"], "decision": item},
+                    {
+                        "at": offer["review"]["reviewed_at"],
+                        "decision": item,
+                        "before": {"review": before_review},
+                    },
                     ensure_ascii=False,
                 )
                 + "\n"

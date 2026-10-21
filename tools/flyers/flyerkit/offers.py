@@ -214,26 +214,39 @@ def parse_size(text: str) -> dict:
         if not re.search(r"[/]\s*$", text[max(0, m.start() - 4) : m.start()])
         or re.search(r"\d\s*/\s*$", text[max(0, m.start() - 8) : m.start()])
     ]
+    counted = list(
+        re.finditer(
+            r"\b(\d{1,3})\s*[- ]?(?:pack|pk|ct|count|pieces?|eggs?|rolls?|'?s)\b",
+            text,
+            re.I,
+        )
+    )
+    counted += list(
+        re.finditer(
+            r"\b(?:pack|pkg|package|paquet)\s+(?:of|de)\s+(\d{1,3})\b", text, re.I
+        )
+    )
+    # Mixed measured/count alternatives cannot be reduced to the measured
+    # variant alone (e.g. bread 675 g OR buns 8 count).
+    if (
+        matches
+        and counted
+        and (
+            re.search(r"\b(?:or|ou)\b", text, re.I)
+            or re.search(r"\d\s*[-–/]\s*\d+\s*(?:count|pack|ct|roll)", text, re.I)
+            or re.search(r"\b(?:kg|g|ml|l|lb|oz)\s*/\s*\d", text, re.I)
+        )
+    ):
+        out.update(raw=text.strip(), ambiguous=True)
+        return out
     if not matches:
-        counted = list(
-            re.finditer(
-                r"\b(\d{1,3})\s*[- ]?(?:pack|pk|ct|count|pieces?|eggs?|'?s)\b",
-                text,
-                re.I,
-            )
-        )
-        counted += list(
-            re.finditer(
-                r"\b(?:pack|pkg|package|paquet)\s+(?:of|de)\s+(\d{1,3})\b", text, re.I
-            )
-        )
         if counted:
             counts = {int(m[1]) for m in counted}
             if len(counts) != 1 or any(
                 re.search(r"\d\s*[-–/]\s*$", text[max(0, m.start() - 8) : m.start()])
                 for m in counted
             ):
-                out.update(raw="; ".join(m[0] for m in counted), ambiguous=True)
+                out.update(raw=text.strip(), ambiguous=True)
             elif next(iter(counts)) > 0:
                 value = next(iter(counts))
                 out.update(
@@ -254,6 +267,9 @@ def parse_size(text: str) -> dict:
     # A range '350-400 g' is not an exact 400 g package.
     prefix = text[max(0, m.start() - 15) : m.start()]
     suffix = text[m.end() : m.end() + 20]
+    if re.search(r"\b(?:up to|maximum|approx(?:imately)?|environ)\s*$", prefix, re.I):
+        out.update(raw=text.strip(), ambiguous=True)
+        return out
     if re.search(r"\d\s*(?:[-–/à]|or|ou|to|au)\s*$", prefix, re.I) or re.match(
         r"\s*(?:to|au|[-–])\s*\d", suffix, re.I
     ):
@@ -292,6 +308,8 @@ def parse_size(text: str) -> dict:
 
 def unit_price(price: dict, size: dict) -> dict | None:
     """Comparison amount per kg or L, preserving fractional cents as decimal strings."""
+    if price["kind"] == "savings":
+        return None
     amount = Decimal(price["amount_cents"]) / Decimal(price["purchase_quantity"])
     basis = price["basis"]
     factor = {
@@ -642,6 +660,38 @@ def product_tokens(text: str) -> list[str]:
     )
 
 
+def canonical_store_address(text: str) -> str:
+    """Normalize common printed address aliases without broadening geography."""
+    aliases = {
+        "st": "street",
+        "rd": "road",
+        "ave": "avenue",
+        "av": "avenue",
+        "blvd": "boulevard",
+        "boul": "boulevard",
+        "dr": "drive",
+        "n": "north",
+        "s": "south",
+        "e": "east",
+        "w": "west",
+    }
+    return " ".join(
+        aliases.get(t, t) for t in normalized(text.replace("&", " and ")).split()
+    )
+
+
+def excluded_store(selected: str, excluded: str) -> bool:
+    a, b = canonical_store_address(selected), canonical_store_address(excluded)
+    if a == b or " " + b + " " in " " + a + " ":
+        return True
+    address = r"\b(\d+[a-z]?)\s+(.+?)\s+(?:street|road|avenue|boulevard|drive)\b"
+    match = re.search(address, b)
+    # Missing city/province suffixes never make an excluded street eligible.
+    return bool(
+        match and re.search(r"\b" + re.escape(match[1] + " " + match[2]) + r"\b", a)
+    )
+
+
 def match_offer(
     offer: dict,
     query: str,
@@ -651,6 +701,7 @@ def match_offer(
     city: str | None = None,
     include_unreviewed=False,
     region: str | None = None,
+    store_address: str | None = None,
 ) -> dict | None:
     if offer["review"]["status"] != "validated" and not include_unreviewed:
         return None
@@ -666,6 +717,17 @@ def match_offer(
     ):
         return None
     geo = offer["geography"]
+    if geo.get("included_stores") and (
+        not store_address
+        or canonical_store_address(store_address)
+        not in {canonical_store_address(s) for s in geo["included_stores"]}
+    ):
+        return None
+    if geo.get("excluded_stores") and (
+        not store_address
+        or any(excluded_store(store_address, s) for s in geo["excluded_stores"])
+    ):
+        return None
     selected_region = (
         geo["scope"] == "regional"
         and region
@@ -748,7 +810,9 @@ def match_offer(
             else "package_size"
             if requested_size["raw"]
             else "unspecified",
-            "location_basis": "published_city"
+            "location_basis": "selected_store_address"
+            if geo.get("included_stores") or geo.get("excluded_stores")
+            else "published_city"
             if geo["cities"]
             else "selected_published_region"
             if selected_region
