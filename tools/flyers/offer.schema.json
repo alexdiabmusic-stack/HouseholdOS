@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HouseholdOS flyer offer proposal",
+  "type": "object",
+  "required": ["schema_version", "offer_id", "flyer_id", "retailer_id", "retailer_name", "geography", "valid_from", "valid_to", "product", "price", "review", "evidence", "source_context_hash"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "source_context_hash": {"type":"string","pattern":"^[0-9a-f]{24}$"},
+    "offer_id": {"type": "string", "minLength": 1},
+    "flyer_id": {"type": "string", "minLength": 1},
+    "retailer_id": {"type": "string"},
+    "retailer_name": {"type": "string"},
+    "valid_from": {"type": ["string", "null"], "format": "date"},
+    "valid_to": {"type": ["string", "null"], "format": "date"},
+    "geography": {
+      "type": "object", "required": ["country", "provinces", "cities", "scope", "evidence"],
+      "properties": {
+        "country": {"const": "CA"}, "provinces": {"type": "array", "items": {"type": "string"}},
+        "cities": {"type": "array", "items": {"type": "string"}},
+        "scope": {"enum": ["city", "province", "national", "regional", "unknown"]}, "evidence": {"type": "string"},
+        "included_stores": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "excluded_stores": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "product": {"type": "object", "required": ["name", "canonical_tokens", "size", "details_raw"], "properties": {
+      "name": {"type": ["string", "null"]}, "brand": {"type": ["string", "null"]},
+      "canonical_tokens": {"type": "array", "items": {"type": "string"}}, "size": {"type": "object"}, "details_raw": {"type": "string"}
+    }},
+    "price": {"type": "object", "required": ["currency", "amount_cents", "purchase_quantity", "kind", "basis", "requires_membership"], "properties": {
+      "currency": {"const": "CAD"}, "amount_cents": {"type": "integer", "minimum": 1, "maximum": 500000},
+      "purchase_quantity": {"type": "integer", "minimum": 1}, "kind": {"enum": ["sale", "multibuy", "regular", "savings"]},
+      "basis": {"enum": ["each", "lb", "kg", "100g", "100ml", "L"]}, "requires_membership": {"type": "boolean"}
+    }},
+    "conditions": {"type": "array", "items": {"type": "string"}},
+    "review": {"type": "object", "required": ["status", "reasons"], "properties": {
+      "status": {"enum": ["needs_review", "validated", "rejected"]}, "reasons": {"type": "array", "items": {"type": "string"}},
+      "method": {"enum": ["ai_visual", "human_visual"]},
+      "assessment": {
+        "type": "object", "required": ["source_image_inspected", "checked_fields", "unresolved_fields", "unapplied_fields"],
+        "properties": {
+          "source_image_inspected": {"const": true},
+          "checked_fields": {"type": "object"},
+          "unresolved_fields": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "unapplied_fields": {"type": "object"},
+          "image_review": {"type": ["object", "null"]},
+          "unrepresentable_source_basis": {"type": ["string", "null"]}
+        }
+      }
+    }},
+    "evidence": {"type": "object", "required": ["source_url", "source_image_url", "image_path", "image_sha256", "page_number", "price_bbox_px", "price_bbox_normalized", "ocr_engine", "ocr_price_confidence", "retrieved_at"], "properties": {
+      "image_sha256": {"type": "string"}, "page_number": {"type": "integer", "minimum": 1},
+      "price_bbox_px": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "integer", "minimum": 0}},
+      "price_bbox_normalized": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number", "minimum": 0, "maximum": 1}}
+    }}
+  }
+}

@@ -1,0 +1,5 @@
+# Optional local neural OCR. Models are bundled; inference needs no API key.
+-r requirements.txt
+rapidocr_onnxruntime==1.4.4
+numpy>=1.26,<3
+opencv-python>=4.10,<5

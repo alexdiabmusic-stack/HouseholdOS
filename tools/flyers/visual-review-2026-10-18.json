@@ -1,0 +1,51 @@
+{
+  "snapshot_as_of": "2026-10-18",
+  "review_date_utc": "2026-10-21",
+  "method": "ai_visual",
+  "original_offer_ids_preserved": true,
+  "offers": 13283,
+  "editions": 87,
+  "pages": 1351,
+  "review_outcomes": {
+    "validated": 9106,
+    "needs_review": 3527,
+    "rejected": 650
+  },
+  "eligible_sale_or_multibuy_records": 8332,
+  "unique_reviewed_image_sha256": 998,
+  "source_outcomes": {
+    "validated": 63,
+    "needs_review": 24
+  },
+  "source_scopes": {
+    "city": 7,
+    "province": 43,
+    "regional": 25,
+    "unknown": 11,
+    "national": 1
+  },
+  "records_changed_from_raw_by_field": {
+    "product": 12611,
+    "geography": 13283,
+    "price": 3502,
+    "conditions": 8573,
+    "valid_from": 64,
+    "valid_to": 441
+  },
+  "source_period_conflicts": 217,
+  "interpretation": "Review covers all original proposals, including unresolved and rejected detections. It is an AI visual review, not human approval, a trained-model evaluation, or a measurement of missed-offer recall.",
+  "package": {
+    "archive": "smartcanucks-reviewed-2026-10-18.zip",
+    "bytes": 20422854,
+    "sha256": "7cdab9ca5b0266b478e95290e3ec9b5517c6ae9ab56714e5d10c41291ecc455f",
+    "standalone_verification": "pass",
+    "checked_files": 360
+  },
+  "verification": {
+    "python_tests_passed": 73,
+    "integrity_audit": "pass",
+    "original_id_set_comparison": "pass",
+    "node_json_parse": "pass",
+    "review_form_dom_execution": "pass"
+  }
+}

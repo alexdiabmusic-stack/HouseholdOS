@@ -23,6 +23,8 @@ Source implementation does not mean hosted services are connected. No Supabase p
 
 See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) for remaining work, limits and verification requirements. The app can be used in on-device mode without service configuration.
 
+The separate [grocery flyer pipeline](tools/flyers/README.md) downloads national/regional SmartCanucks editions, runs English/French OCR locally and provides image-backed review queues, SQLite/JSONL/CSV exports and grocery-item matching. The live run covers 87 editions and 1,351 pages across 30 configured grocery banners. Only explicitly reviewed offers enter the matching catalog; see the pipeline's validation report for measured extraction limits.
+
 ## Local checks
 
 ```sh

@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Flyer applicability review</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 20px;
+      font: 15px system-ui;
+      background: #f4f5f3;
+      color: #1b251e;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(400px, 1fr) 400px;
+      gap: 20px;
+    }
+    aside {
+      background: white;
+      padding: 20px;
+    }
+    img {
+      width: 100%;
+      display: block;
+    }
+    .image {
+      max-height: 90vh;
+      overflow: auto;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-top: 12px;
+    }
+    input,
+    select,
+    textarea,
+    button {
+      font: inherit;
+      padding: 9px;
+      border: 1px solid #9caaa0;
+      border-radius: 6px;
+    }
+    input,
+    select,
+    textarea {
+      width: 100%;
+    }
+    input[type="checkbox"] {
+      width: auto;
+    }
+    button {
+      cursor: pointer;
+      margin-top: 14px;
+      background: white;
+    }
+    button.primary {
+      background: #176d42;
+      color: white;
+    }
+    #message {
+      white-space: pre-wrap;
+      color: #9d2424;
+    }
+    .pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    a {
+      color: #176d42;
+    }
+    @media (max-width: 900px) {
+      main {
+        display: block;
+      }
+      .image {
+        max-height: 65vh;
+      }
+    }
+  </style>
+  <h1>Flyer applicability</h1>
+  <p>
+    Check published dates, participating regions and exclusions against the
+    original image. Source corrections reset affected offer validations.
+  </p>
+  <p>
+    <a href="review.html">Offer review</a> · <a href="pages.html">All pages</a>
+  </p>
+  <main>
+    <div class="image"><img id="image" alt="Original source flyer page" /></div>
+    <aside>
+      <label for="flyer">Edition</label
+      ><select id="flyer"></select
+      ><label for="page">Evidence page</label
+      ><select id="page"></select>
+      <p>
+        <a id="original" target="_blank" rel="noreferrer"
+          >Open original source</a
+        >
+      </p>
+      <form id="form">
+        <label for="reviewer">Reviewer</label><input id="reviewer" required />
+        <div class="pair">
+          <div>
+            <label for="start">Flyer starts</label
+            ><input id="start" type="date" required />
+          </div>
+          <div>
+            <label for="end">Flyer ends</label
+            ><input id="end" type="date" required />
+          </div>
+        </div>
+        <label for="scope">Published applicability</label
+        ><select id="scope">
+          <option value="province">Province / provinces</option>
+          <option value="city">Named city / cities</option>
+          <option value="regional">Named region</option>
+          <option value="national">Explicitly nationwide</option>
+          <option value="unknown">Unresolved</option>
+        </select>
+        <label for="provinces">Province codes (comma-separated)</label
+        ><input id="provinces" placeholder="ON, QC" /><label for="cities"
+          >Included cities, if explicitly city-specific</label
+        ><input id="cities" placeholder="Ottawa, Kanata" /><label for="region"
+          >Published regional label</label
+        ><input id="region" placeholder="West, GTA, Ontario" /><label
+          for="excluded"
+          >Excluded cities (comma-separated)</label
+        ><input id="excluded" placeholder="Thunder Bay" /><label for="evidence"
+          >Quoted evidence for dates, region and exclusions</label
+        ><textarea id="evidence" rows="5" required></textarea>
+        <p id="stores"></p>
+        <label
+          ><input id="checked" type="checkbox" required /> I checked the dates,
+          participation and exclusions on this page.</label
+        >
+        <button type="submit" class="primary">Save source decision</button>
+      </form>
+      <button id="export">Download source decisions</button>
+      <p id="message" role="status"></p>
+      <p>
+        Apply the downloaded JSONL file with review-source, then reopen the
+        updated offer review. No catalog changes are made by this page.
+      </p>
+    </aside>
+  </main>
+  <script>
+    "use strict";
+    const flyers = __DATA__,
+      decisions = new Map(),
+      $ = (id) => document.getElementById(id),
+      split = (id) =>
+        $(id)
+          .value.split(",")
+          .map((x) => x.trim())
+          .filter(Boolean);
+    for (const f of flyers) {
+      const option = document.createElement("option");
+      option.value = f.flyer_id;
+      option.textContent =
+        f.source_title +
+        (f.geography.scope === "unknown" ? " — region unresolved" : "");
+      $("flyer").append(option);
+    }
+    const storageKey = "flyer-source-review-__STORAGE_KEY__";
+    try {
+      for (const d of JSON.parse(localStorage.getItem(storageKey) || "[]")) {
+        const f = flyers.find((f) => f.flyer_id === d.flyer_id);
+        if (f?.pages.some((p) => p.image_sha256 === d.image_sha256))
+          decisions.set(d.flyer_id, d);
+      }
+    } catch (e) {}
+    function persist() {
+      try {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify([...decisions.values()]),
+        );
+      } catch (e) {
+        $("message").textContent =
+          "Download your source decisions before closing.";
+      }
+    }
+    function current() {
+      return flyers.find((f) => f.flyer_id === $("flyer").value);
+    }
+    function image() {
+      const f = current(),
+        p = f?.pages.find((p) => String(p.page_number) === $("page").value);
+      if (p) $("image").src = p.url;
+    }
+    function render() {
+      const f = current();
+      if (!f) {
+        $("form").hidden = true;
+        return;
+      }
+      const d = decisions.get(f.flyer_id),
+        g = d?.geography ?? f.geography;
+      $("page").replaceChildren();
+      for (const p of f.pages) {
+        const option = document.createElement("option");
+        option.value = p.page_number;
+        option.textContent = "Page " + p.page_number;
+        $("page").append(option);
+      }
+      $("original").href = f.source_url;
+      $("start").value = d?.valid_from ?? f.valid_from ?? "";
+      $("end").value = d?.valid_to ?? f.valid_to ?? "";
+      $("scope").value = g.scope;
+      $("provinces").value = g.provinces.join(", ");
+      $("cities").value = g.cities.join(", ");
+      $("excluded").value = (g.excluded_cities || []).join(", ");
+      $("region").value = g.published_region || "";
+      $("evidence").value = d?.notes ?? f.source_review?.notes ?? "";
+      $("stores").textContent = [
+        g.included_stores?.length
+          ? "Participating stores: " + g.included_stores.join("; ")
+          : "",
+        g.excluded_stores?.length
+          ? "Excluded stores: " + g.excluded_stores.join("; ")
+          : "",
+      ].filter(Boolean).join(". ");
+      $("checked").checked = !!d;
+      image();
+      $("message").textContent = decisions.size + " source decisions";
+    }
+    $("flyer").onchange = render;
+    $("page").onchange = image;
+    $("form").onsubmit = (event) => {
+      event.preventDefault();
+      const f = current(),
+        p = f.pages.find((p) => String(p.page_number) === $("page").value),
+        scope = $("scope").value,
+        provinces = split("provinces").map((x) => x.toUpperCase()),
+        cities = split("cities");
+      if (
+        !p ||
+        scope === "unknown" ||
+        (scope === "province" && !provinces.length) ||
+        (scope === "city" && (!cities.length || !provinces.length)) ||
+        (scope === "regional" && !$("region").value.trim())
+      ) {
+        $("message").textContent =
+          "Resolve the published applicability before saving.";
+        return;
+      }
+      if ($("start").value > $("end").value) {
+        $("message").textContent = "End date precedes start date.";
+        return;
+      }
+      decisions.set(f.flyer_id, {
+        flyer_id: f.flyer_id,
+        image_sha256: p.image_sha256,
+        reviewer: $("reviewer").value.trim(),
+        valid_from: $("start").value,
+        valid_to: $("end").value,
+        notes: $("evidence").value.trim(),
+        geography: {
+          ...(decisions.get(f.flyer_id)?.geography ?? f.geography),
+          country: "CA",
+          provinces,
+          cities,
+          published_region: $("region").value.trim() || null,
+          scope,
+          excluded_cities: split("excluded"),
+          evidence: $("evidence").value.trim(),
+        },
+      });
+      persist();
+      $("message").textContent =
+        decisions.size +
+        " source decisions. Download and apply them to update the catalog.";
+    };
+    $("export").onclick = () => {
+      const text =
+          [...decisions.values()].map((x) => JSON.stringify(x)).join("\n") +
+          "\n",
+        url = URL.createObjectURL(
+          new Blob([text], { type: "application/x-ndjson" }),
+        ),
+        a = document.createElement("a");
+      a.href = url;
+      a.download = "flyer-source-decisions.jsonl";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    };
+    render();
+  </script>
+</html>

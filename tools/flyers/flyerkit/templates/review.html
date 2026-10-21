@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  />
+  <title>Grocery flyer review</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font: 15px system-ui;
+      background: #f4f5f3;
+      color: #1b251e;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      background: white;
+      border-bottom: 1px solid #ddd;
+      padding: 12px 20px;
+      z-index: 5;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      border: 1px solid #9caaa0;
+      border-radius: 6px;
+      padding: 9px;
+    }
+    button {
+      cursor: pointer;
+      background: white;
+    }
+    button.primary {
+      background: #176d42;
+      color: white;
+      border-color: #176d42;
+    }
+    label {
+      display: block;
+      margin: 10px 0 4px;
+      font-weight: 600;
+    }
+    input,
+    select,
+    textarea {
+      width: 100%;
+      background: white;
+      color: inherit;
+    }
+    input[type="checkbox"] {
+      width: auto;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(400px, 1fr) 410px;
+      gap: 20px;
+      padding: 20px;
+    }
+    .visual {
+      position: relative;
+      align-self: start;
+      background: white;
+      overflow: auto;
+      max-height: 86vh;
+    }
+    .sheet {
+      position: relative;
+      min-width: 100%;
+    }
+    .sheet img {
+      width: 100%;
+      display: block;
+    }
+    .box {
+      position: absolute;
+      border: 3px solid #e52323;
+      pointer-events: none;
+    }
+    .caption {
+      border-color: #1977cf;
+    }
+    aside {
+      background: white;
+      padding: 18px;
+      border-radius: 8px;
+    }
+    .pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    #message {
+      white-space: pre-wrap;
+      color: #9d2424;
+    }
+    small,
+    .muted {
+      color: #526258;
+    }
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    #warnings {
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .actions button {
+      flex: 1;
+    }
+    a {
+      color: #176d42;
+    }
+    details {
+      margin-top: 14px;
+    }
+    @media (max-width: 900px) {
+      main {
+        display: block;
+        padding: 10px;
+      }
+      .visual {
+        max-height: 65vh;
+      }
+      aside {
+        margin-top: 12px;
+      }
+    }
+  </style>
+  <header>
+    <h1>Flyer review</h1>
+    <a href="sources.html">Applicability</a><a href="pages.html">All pages</a
+    ><span id="counter"></span><button id="previous">Previous</button
+    ><button id="next">Next</button
+    ><button id="export" class="primary">Download decisions</button
+    ><span id="saved"></span>
+  </header>
+  <main>
+    <section class="visual">
+      <div class="sheet" id="sheet">
+        <img id="image" alt="Original flyer page" /><span
+          id="priceBox"
+          class="box"
+        ></span
+        ><span id="captionBox" class="box caption"></span>
+      </div>
+    </section>
+    <aside>
+      <p class="muted">
+        Check the red price box, blue caption box, and the surrounding page.
+        Correct all fields before validating. Missed and uncertain offers remain
+        in the queue.
+      </p>
+      <label for="search">Find an offer</label
+      ><input id="search" placeholder="Retailer, product or offer ID" />
+      <div class="pair">
+        <div>
+          <label for="filter">Show</label
+          ><select id="filter">
+            <option value="all">All proposals</option>
+            <option value="pending">Undecided</option>
+            <option value="validated">Validated here</option>
+            <option value="rejected">Rejected here</option>
+          </select>
+        </div>
+        <div>
+          <label for="zoom">Image width</label
+          ><select id="zoom">
+            <option value="100">Fit</option>
+            <option value="150">150%</option>
+            <option value="200">200%</option>
+          </select>
+        </div>
+      </div>
+      <label for="pageMenu">Add a missed offer from any page</label
+      ><select id="pageMenu"></select
+      ><button id="addManual" type="button">Draw missed price box</button>
+      <h2 id="title"></h2>
+      <p id="source"></p>
+      <div id="warnings"></div>
+      <form id="form">
+        <label for="reviewer">Reviewer</label
+        ><input id="reviewer" required autocomplete="name" />
+        <label for="product">Product and variant</label
+        ><input id="product" required maxlength="200" />
+        <label for="brand">Brand (blank if unknown)</label><input id="brand" />
+        <label for="size">Package size or alternatives (blank if unknown)</label
+        ><input id="size" placeholder="400g, 2 x 500ml, or 350–400g" />
+        <div class="pair">
+          <div>
+            <label for="amount">Advertised amount (CAD)</label
+            ><input
+              id="amount"
+              inputmode="decimal"
+              pattern="[0-9]+([.,][0-9]{1,2})?"
+              required
+            />
+          </div>
+          <div>
+            <label for="quantity">Units for that amount</label
+            ><input id="quantity" type="number" min="1" step="1" required />
+          </div>
+        </div>
+        <div class="pair">
+          <div>
+            <label for="kind">Amount type</label
+            ><select id="kind">
+              <option value="sale">Sale price</option>
+              <option value="multibuy">Multi-buy total</option>
+              <option value="savings">Savings amount</option>
+              <option value="regular">Regular price</option>
+            </select>
+          </div>
+          <div>
+            <label for="basis">Price basis</label
+            ><select id="basis" required>
+              <option value="">Select basis</option>
+              <option value="each">Each / package</option>
+              <option value="lb">Per lb</option>
+              <option value="kg">Per kg</option>
+              <option value="100g">Per 100g</option>
+              <option value="100ml">Per 100ml</option>
+              <option value="L">Per L</option>
+            </select>
+          </div>
+        </div>
+        <label
+          ><input id="member" type="checkbox" /> Requires membership or
+          app</label
+        >
+        <div class="pair">
+          <div>
+            <label for="start">Offer starts</label
+            ><input id="start" type="date" required />
+          </div>
+          <div>
+            <label for="end">Offer ends</label
+            ><input id="end" type="date" required />
+          </div>
+        </div>
+        <label for="conditions"
+          >Conditions, exclusions and limits (one per line)</label
+        ><textarea id="conditions" rows="3"></textarea>
+        <label for="notes">Review notes</label
+        ><textarea id="notes" rows="2"></textarea>
+        <label
+          ><input id="checked" type="checkbox" required /> I checked the
+          original price, product, size, conditions and dates.</label
+        >
+        <div class="actions">
+          <button type="submit" class="primary">Validate</button
+          ><button id="reject" type="button">Reject</button
+          ><button id="clear" type="button">Clear decision</button>
+        </div>
+      </form>
+      <p id="message" role="status"></p>
+      <details>
+        <summary>OCR and evidence</summary>
+        <pre id="raw"></pre>
+      </details>
+      <p class="muted">
+        Download the decision file, then apply it with the pipeline's review
+        command. Unresolved source geography or dates must be corrected with
+        review-source before validation. A downloaded file alone does not change
+        the catalog.
+      </p>
+    </aside>
+  </main>
+  <script>
+    "use strict";
+    const offers = __DATA__,
+      pages = __PAGES__;
+    let manualMode = null;
+    const pageKey = (p) => p.flyer_id + ":" + p.evidence.page_number;
+    for (const p of pages) {
+      const opt = document.createElement("option");
+      opt.value = pageKey(p);
+      opt.textContent = p.label;
+      document.getElementById("pageMenu").append(opt);
+    }
+    const $ = (id) => document.getElementById(id);
+    let position = 0;
+    const decisions = new Map();
+    const storageKey = "flyer-review-__DATASET_KEY__";
+    try {
+      for (const d of JSON.parse(localStorage.getItem(storageKey) || "[]")) {
+        let o = offers.find((o) => o.offer_id === d.offer_id);
+        if (!o && d.entry_method === "manual" && d._manual_snapshot) {
+          const p = pages.find(
+            (p) =>
+              p.flyer_id === d.flyer_id &&
+              p.evidence.page_number === d.page_number &&
+              p.evidence.image_sha256 === d.image_sha256 &&
+              p.source_context_hash === d.source_context_hash,
+          );
+          if (p) {
+            o = { ...p, ...d._manual_snapshot };
+            offers.push(o);
+          }
+        }
+        if (
+          o &&
+          d.image_sha256 === o.evidence.image_sha256 &&
+          d.source_context_hash === o.source_context_hash
+        )
+          decisions.set(d.offer_id, d);
+      }
+    } catch (e) {}
+    try {
+      $("reviewer").value =
+        localStorage.getItem(storageKey + "-reviewer") || "";
+    } catch (e) {}
+    function persist() {
+      try {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify([...decisions.values()]),
+        );
+        localStorage.setItem(storageKey + "-reviewer", $("reviewer").value);
+      } catch (e) {
+        $("message").textContent =
+          "Draft storage is unavailable. Download your decisions before closing.";
+      }
+    }
+    function selected() {
+      const q = $("search").value.toLowerCase(),
+        f = $("filter").value;
+      return offers.filter((o) => {
+        const d = decisions.get(o.offer_id);
+        return (
+          (!q ||
+            [
+              o.offer_id,
+              o.retailer_name,
+              d?.product_name || "",
+              o.product.name || "",
+            ]
+              .join(" ")
+              .toLowerCase()
+              .includes(q)) &&
+          (f === "all" ||
+            (f === "pending"
+              ? (d?.status ?? o.review.status) === "needs_review"
+              : (d?.status ?? o.review.status) === f))
+        );
+      });
+    }
+    function current() {
+      const list = selected();
+      position = Math.max(0, Math.min(position, list.length - 1));
+      return list[position];
+    }
+    function setBox(id, box, width, height) {
+      const e = $(id);
+      if (!box) {
+        e.hidden = true;
+        return;
+      }
+      e.hidden = false;
+      const [x, y, w, h] = box;
+      e.style.left = (x / width) * 100 + "%";
+      e.style.top = (y / height) * 100 + "%";
+      e.style.width = (w / width) * 100 + "%";
+      e.style.height = (h / height) * 100 + "%";
+    }
+    function render() {
+      const o = current(),
+        list = selected();
+      $("counter").textContent = list.length
+        ? position + 1 + " / " + list.length
+        : "No offers";
+      $("saved").textContent = decisions.size + " decisions";
+      $("export").disabled = !decisions.size;
+      $("form").hidden = !o;
+      if (!o) {
+        $("title").textContent = "No offers in this selection";
+        $("image").removeAttribute("src");
+        return;
+      }
+      const d = decisions.get(o.offer_id),
+        p = o.price,
+        e = o.evidence;
+      $("title").textContent = o.retailer_name;
+      if (
+        pages.some(
+          (p) => pageKey(p) === o.flyer_id + ":" + o.evidence.page_number,
+        )
+      )
+        $("pageMenu").value = o.flyer_id + ":" + o.evidence.page_number;
+      $("source").replaceChildren();
+      const a = document.createElement("a");
+      a.href = e.source_url;
+      a.target = "_blank";
+      a.rel = "noreferrer";
+      a.textContent = "Source flyer";
+      $("source").append(
+        a,
+        document.createTextNode(
+          " · page " +
+            e.page_number +
+            " · " +
+            (o.geography.published_region ||
+              o.geography.provinces.join(", ") ||
+              "Region unresolved"),
+        ),
+      );
+      $("warnings").textContent = (o.review.reasons || []).join(" · ");
+      $("image").src = o.local_image;
+      $("image").onload = () => {
+        const im = $("image");
+        setBox("priceBox", e.price_bbox_px, im.naturalWidth, im.naturalHeight);
+        setBox(
+          "captionBox",
+          e.caption_bbox_px,
+          im.naturalWidth,
+          im.naturalHeight,
+        );
+      };
+      $("product").value = d?.product_name ?? o.product.name ?? "";
+      $("brand").value = d?.brand ?? o.product.brand ?? "";
+      $("size").value = d?.size_text ?? o.product.size.raw ?? "";
+      $("amount").value = ((d?.amount_cents ?? p.amount_cents) / 100).toFixed(
+        2,
+      );
+      $("quantity").value = d?.purchase_quantity ?? p.purchase_quantity;
+      $("kind").value = d?.kind ?? p.kind;
+      $("basis").value =
+        d?.basis ??
+        (p.flags?.includes("weight_basis_unresolved") ? "" : p.basis);
+      $("member").checked = d?.requires_membership ?? p.requires_membership;
+      $("start").value = d?.offer_valid_from ?? o.valid_from ?? "";
+      $("end").value = d?.offer_valid_to ?? o.valid_to ?? "";
+      for (const id of ["start", "end"]) {
+        $(id).min = o.flyer_valid_from || "";
+        $(id).max = o.flyer_valid_to || "";
+      }
+      $("conditions").value = (d?.conditions ?? o.conditions ?? []).join("\n");
+      $("notes").value = d?.notes ?? "";
+      $("checked").checked = !!d;
+      $("raw").textContent = JSON.stringify(
+        {
+          offer_id: o.offer_id,
+          image_sha256: e.image_sha256,
+          product: o.product,
+          price: o.price,
+          geography: o.geography,
+          evidence: e,
+        },
+        null,
+        2,
+      );
+      $("message").textContent = d ? "Decision: " + d.status : "";
+    }
+    function record(status) {
+      const o = current();
+      if (!o) return;
+      const reviewer = $("reviewer").value.trim();
+      if (!reviewer) throw Error("Enter a reviewer.");
+      let item = {
+        offer_id: o.offer_id,
+        image_sha256: o.evidence.image_sha256,
+        source_context_hash: o.source_context_hash,
+        status,
+        reviewer,
+        notes: $("notes").value.trim(),
+      };
+      if ($("checked").checked) {
+        item.method = "human_visual";
+        item.source_image_inspected = true;
+      }
+      if (status === "validated") {
+        if (o.geography.scope === "unknown" || !o.valid_from || !o.valid_to)
+          throw Error(
+            "Resolve the source geography and dates first with review-source.",
+          );
+        if (!$("checked").checked)
+          throw Error("Check the original page and tick the confirmation.");
+        if (!$("form").reportValidity()) return;
+        const raw = $("amount").value.replace(",", ".");
+        if (!/^\d+(\.\d{1,2})?$/.test(raw))
+          throw Error(
+            "Enter a positive amount with at most two decimal places.",
+          );
+        const [a, b = ""] = raw.split("."),
+          amount = Number(a) * 100 + Number(b.padEnd(2, "0"));
+        if (!Number.isSafeInteger(amount) || amount < 1 || amount > 500000)
+          throw Error("Amount is outside the supported range.");
+        const quantity = Number($("quantity").value);
+        if (!Number.isInteger(quantity) || quantity < 1)
+          throw Error("Units must be a positive integer.");
+        const kind = $("kind").value;
+        if (
+          (kind === "multibuy" && quantity < 2) ||
+          (["sale", "regular"].includes(kind) && quantity !== 1)
+        )
+          throw Error(
+            "A multi-buy needs two or more units; a sale/regular amount uses one unit.",
+          );
+        if ($("start").value > $("end").value)
+          throw Error("Offer end precedes start.");
+        Object.assign(item, {
+          product_name: $("product").value.trim(),
+          brand: $("brand").value.trim() || null,
+          size_text: $("size").value.trim(),
+          amount_cents: amount,
+          purchase_quantity: quantity,
+          basis: $("basis").value,
+          kind: $("kind").value,
+          requires_membership: $("member").checked,
+          offer_valid_from: $("start").value,
+          offer_valid_to: $("end").value,
+          conditions: $("conditions")
+            .value.split("\n")
+            .map((x) => x.trim())
+            .filter(Boolean),
+        });
+      }
+      if (o.evidence.entry_method === "manual") {
+        Object.assign(item, {
+          entry_method: "manual",
+          flyer_id: o.flyer_id,
+          page_number: o.evidence.page_number,
+          price_bbox_px: o.evidence.price_bbox_px,
+          _manual_snapshot: o,
+        });
+      }
+      decisions.set(o.offer_id, item);
+      render();
+      persist();
+    }
+    $("form").onsubmit = (event) => {
+      event.preventDefault();
+      try {
+        record("validated");
+      } catch (e) {
+        $("message").textContent = e.message;
+      }
+    };
+    $("reject").onclick = () => {
+      try {
+        record("rejected");
+      } catch (e) {
+        $("message").textContent = e.message;
+      }
+    };
+    $("clear").onclick = () => {
+      const o = current();
+      if (o) decisions.delete(o.offer_id);
+      render();
+      persist();
+    };
+    $("previous").onclick = () => {
+      position--;
+      render();
+    };
+    $("next").onclick = () => {
+      position++;
+      render();
+    };
+    $("search").oninput = $("filter").onchange = () => {
+      position = 0;
+      render();
+    };
+    $("zoom").onchange = () => {
+      $("sheet").style.width = $("zoom").value + "%";
+    };
+    $("export").onclick = () => {
+      const text =
+          [...decisions.values()]
+            .map((x) => {
+              const row = { ...x };
+              if (row.entry_method === "manual") delete row.offer_id;
+              delete row._manual_snapshot;
+              return JSON.stringify(row);
+            })
+            .join("\n") + "\n",
+        url = URL.createObjectURL(
+          new Blob([text], { type: "application/x-ndjson" }),
+        );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "flyer-review-decisions.jsonl";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    };
+    render();
+    $("addManual").onclick = () => {
+      const p = pages.find((p) => pageKey(p) === $("pageMenu").value);
+      if (!p) return;
+      manualMode = { page: p, first: null };
+      $("image").onload = () => {
+        $("priceBox").hidden = $("captionBox").hidden = true;
+      };
+      $("image").src = p.local_image;
+      $("priceBox").hidden = $("captionBox").hidden = true;
+      $("form").hidden = true;
+      $("message").textContent =
+        "Click two opposite corners around the missed price.";
+    };
+    $("image").addEventListener("click", (event) => {
+      if (!manualMode) return;
+      const im = $("image"),
+        r = im.getBoundingClientRect(),
+        point = [
+          Math.max(
+            0,
+            Math.min(
+              im.naturalWidth,
+              Math.round(
+                ((event.clientX - r.left) / r.width) * im.naturalWidth,
+              ),
+            ),
+          ),
+          Math.max(
+            0,
+            Math.min(
+              im.naturalHeight,
+              Math.round(
+                ((event.clientY - r.top) / r.height) * im.naturalHeight,
+              ),
+            ),
+          ),
+        ];
+      if (!manualMode.first) {
+        manualMode.first = point;
+        $("message").textContent = "Click the opposite corner.";
+        return;
+      }
+      const a = manualMode.first,
+        b = point,
+        box = [
+          Math.min(a[0], b[0]),
+          Math.min(a[1], b[1]),
+          Math.abs(a[0] - b[0]),
+          Math.abs(a[1] - b[1]),
+        ];
+      if (box[2] < 2 || box[3] < 2) {
+        $("message").textContent =
+          "The price box is too small; click the second corner again.";
+        return;
+      }
+      const p = manualMode.page,
+        id = "manual-ui-" + pageKey(p) + "-" + box.join("-"),
+        draft = {
+          ...p,
+          offer_id: id,
+          product: {
+            name: "",
+            brand: null,
+            canonical_tokens: [],
+            size: { raw: "" },
+            details_raw: "Manual entry from the source image",
+          },
+          price: {
+            amount_cents: 0,
+            purchase_quantity: 1,
+            basis: "each",
+            kind: "sale",
+            requires_membership: false,
+            flags: [],
+          },
+          conditions: [],
+          review: { status: "needs_review", reasons: ["manual_entry"] },
+          evidence: {
+            ...p.evidence,
+            entry_method: "manual",
+            price_bbox_px: box,
+            price_bbox_normalized: [
+              box[0] / im.naturalWidth,
+              box[1] / im.naturalHeight,
+              box[2] / im.naturalWidth,
+              box[3] / im.naturalHeight,
+            ],
+          },
+        };
+      offers.push(draft);
+      manualMode = null;
+      $("search").value = "";
+      $("filter").value = "all";
+      position = offers.length - 1;
+      render();
+    });
+    const requested = new URLSearchParams(location.search).get("manual");
+    if (requested && pages.some((p) => pageKey(p) === requested)) {
+      $("pageMenu").value = requested;
+      $("addManual").click();
+    }
+  </script>
+</html>
